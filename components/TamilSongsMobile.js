@@ -598,7 +598,7 @@ const TamilSongsMobile = () => {
           <button
             onClick={() => setCurrentView('charts')}
             className={`flex flex-col items-center py-2 px-4 rounded-lg transition-all ${
-              currentView === 'charts
+              currentView === 'charts'
                ? 'text-blue-600 bg-blue-50' 
                : 'text-gray-600'
            }`}
