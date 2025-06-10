@@ -272,79 +272,78 @@ const TamilSongsMobile = () => {
         </div>
       </div>
 
-      {/* Current Playing - Change from pink to light blue */}
-      {currentSong && (
-        <div className="bg-gradient-to-r from-sky-400 to-sky-500 text-white p-6 rounded-xl">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-              <Music className="w-8 h-8" />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-lg">{currentSong.song}</div>
-              <div className="text-sky-100">{currentSong.movie}</div>
-              <div className="text-sky-200 text-sm">{currentSong.singer}</div>
-            </div>
-          </div>
-          
-          {/* Play Mode Selection */}
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => setPlayMode('spotify')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                playMode === 'spotify' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-            >
-              🎵 Spotify
-            </button>
-            <button
-              onClick={() => setPlayMode('youtube')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                playMode === 'youtube' 
-                  ? 'bg-red-600 text-white' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-            >
-              🎬 YouTube
-            </button>
-          </div>
-
-      {/* Player Controls - Change to WHITE buttons */}
-      <div className="flex items-center justify-center gap-4 mt-4">
-        <button 
-          onClick={() => setIsShuffled(!isShuffled)}
-          className={`p-3 rounded-full transition-all ${
-            isShuffled ? 'bg-blue-600 text-white' : 'bg-white/90 text-sky-600 hover:bg-white'
-          }`}
-        >
-          <Shuffle className="w-5 h-5" />
-        </button>
-        
-        <button 
-          onClick={playPrevious}
-          className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
-        >
-          <SkipBack className="w-5 h-5" />
-        </button>
-        
-        <button 
-          onClick={togglePlay}
-          className="p-4 bg-white text-sky-600 rounded-full hover:scale-105 transition-all shadow-lg"
-        >
-          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-        </button>
-        
-        <button 
-          onClick={playNext}
-          className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
-        >
-          <SkipForward className="w-5 h-5" />
-        </button>
-      </div>          
-      )}
+{/* Current Playing - Change from pink to light blue */}
+{currentSong && (
+  <div className="bg-gradient-to-r from-sky-400 to-sky-500 text-white p-6 rounded-xl">
+    <div className="flex items-center gap-4">
+      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+        <Music className="w-8 h-8" />
+      </div>
+      <div className="flex-1">
+        <div className="font-bold text-lg">{currentSong.song}</div>
+        <div className="text-sky-100">{currentSong.movie}</div>
+        <div className="text-sky-200 text-sm">{currentSong.singer}</div>
+      </div>
     </div>
-  )};
+
+    {/* Play Mode Selection */}
+    <div className="mt-4 flex gap-2">
+      <button
+        onClick={() => setPlayMode('spotify')}
+        className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
+          playMode === 'spotify'
+            ? 'bg-green-600 text-white'
+            : 'bg-white/20 text-white hover:bg-white/30'
+        }`}
+      >
+        🎵 Spotify
+      </button>
+      <button
+        onClick={() => setPlayMode('youtube')}
+        className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
+          playMode === 'youtube'
+            ? 'bg-red-600 text-white'
+            : 'bg-white/20 text-white hover:bg-white/30'
+        }`}
+      >
+        🎬 YouTube
+      </button>
+    </div>
+
+    {/* Player Controls - Change to WHITE buttons */}
+    <div className="flex items-center justify-center gap-4 mt-4">
+      <button
+        onClick={() => setIsShuffled(!isShuffled)}
+        className={`p-3 rounded-full transition-all ${
+          isShuffled ? 'bg-blue-600 text-white' : 'bg-white/90 text-sky-600 hover:bg-white'
+        }`}
+      >
+        <Shuffle className="w-5 h-5" />
+      </button>
+
+      <button
+        onClick={playPrevious}
+        className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
+      >
+        <SkipBack className="w-5 h-5" />
+      </button>
+
+      <button
+        onClick={togglePlay}
+        className="p-4 bg-white text-sky-600 rounded-full hover:scale-105 transition-all shadow-lg"
+      >
+        {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+      </button>
+
+      <button
+        onClick={playNext}
+        className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
+      >
+        <SkipForward className="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+)}
 
   const ChartsView = () => (
     <div className="space-y-6">
