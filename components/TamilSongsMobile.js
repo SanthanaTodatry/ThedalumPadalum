@@ -272,17 +272,17 @@ const TamilSongsMobile = () => {
         </div>
       </div>
 
-      {/* Current Playing */}
+      {/* Current Playing - Change from pink to light blue */}
       {currentSong && (
-        <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-6 rounded-xl">
+        <div className="bg-gradient-to-r from-sky-400 to-sky-500 text-white p-6 rounded-xl">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
               <Music className="w-8 h-8" />
             </div>
             <div className="flex-1">
               <div className="font-bold text-lg">{currentSong.song}</div>
-              <div className="text-pink-100">{currentSong.movie}</div>
-              <div className="text-pink-200 text-sm">{currentSong.singer}</div>
+              <div className="text-sky-100">{currentSong.movie}</div>
+              <div className="text-sky-200 text-sm">{currentSong.singer}</div>
             </div>
           </div>
           
