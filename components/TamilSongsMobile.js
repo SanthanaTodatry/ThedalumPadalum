@@ -310,39 +310,38 @@ const TamilSongsMobile = () => {
             </button>
           </div>
 
-          {/* Player Controls - Light Blue */}
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <button 
-              onClick={() => setIsShuffled(!isShuffled)}
-              className={`p-3 rounded-full transition-all ${
-                isShuffled ? 'bg-white text-pink-500' : 'bg-sky-400 text-white hover:bg-sky-500'
-              }`}
-            >
-              <Shuffle className="w-5 h-5" />
-            </button>
-            
-            <button 
-              onClick={playPrevious}
-              className="p-3 bg-sky-400 text-white rounded-full hover:bg-sky-500 transition-all"
-            >
-              <SkipBack className="w-5 h-5" />
-            </button>
-            
-            <button 
-              onClick={togglePlay}
-              className="p-4 bg-white text-pink-500 rounded-full hover:scale-105 transition-all shadow-lg"
-            >
-              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-            </button>
-            
-            <button 
-              onClick={playNext}
-              className="p-3 bg-sky-400 text-white rounded-full hover:bg-sky-500 transition-all"
-            >
-              <SkipForward className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+      {/* Player Controls - Change to WHITE buttons */}
+      <div className="flex items-center justify-center gap-4 mt-4">
+        <button 
+          onClick={() => setIsShuffled(!isShuffled)}
+          className={`p-3 rounded-full transition-all ${
+            isShuffled ? 'bg-blue-600 text-white' : 'bg-white/90 text-sky-600 hover:bg-white'
+          }`}
+        >
+          <Shuffle className="w-5 h-5" />
+        </button>
+        
+        <button 
+          onClick={playPrevious}
+          className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
+        >
+          <SkipBack className="w-5 h-5" />
+        </button>
+        
+        <button 
+          onClick={togglePlay}
+          className="p-4 bg-white text-sky-600 rounded-full hover:scale-105 transition-all shadow-lg"
+        >
+          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+        </button>
+        
+        <button 
+          onClick={playNext}
+          className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
+        >
+          <SkipForward className="w-5 h-5" />
+        </button>
+      </div>          
       )}
     </div>
   );
