@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Menu, X, BarChart3, Music, Home } from 'lucide-react';
 
@@ -142,6 +142,17 @@ const TamilSongsMobile = () => {
       .slice(0, 6);
   }, [filteredSongs]);
 
+  const lyricistData = useMemo(() => {
+    const lyricistCounts = {};
+    filteredSongs.forEach(song => {
+      lyricistCounts[song.lyricist] = (lyricistCounts[song.lyricist] || 0) + 1;
+    });
+    return Object.entries(lyricistCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [filteredSongs]);
+
   // Current playlist
   const currentPlaylist = useMemo(() => {
     return isShuffled 
@@ -220,9 +231,10 @@ const TamilSongsMobile = () => {
     }));
   };
 
-  // Colors
+  // Colors - matching desktop version
   const SINGER_COLORS = ['#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'];
   const COMPOSER_COLORS = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
+  const LYRICIST_COLORS = ['#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fecaca', '#fee2e2'];
 
   const FilterButton = ({ active, onClick, children }) => (
     <button
@@ -240,15 +252,23 @@ const TamilSongsMobile = () => {
   // Mobile Views
   const HomeView = () => (
     <div className="space-y-4">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* 4 Cards - Blue, Purple, Green, Red */}
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl">
           <div className="text-2xl font-bold">{filteredSongs.length}</div>
-          <div className="text-blue-100 text-sm">Songs Found</div>
+          <div className="text-blue-100 text-sm">Songs</div>
         </div>
         <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
+          <div className="text-2xl font-bold">{uniqueSingers.length}</div>
+          <div className="text-purple-100 text-sm">Singers</div>
+        </div>
+        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl">
           <div className="text-2xl font-bold">{uniqueComposers.length}</div>
-          <div className="text-purple-100 text-sm">Composers</div>
+          <div className="text-green-100 text-sm">Composers</div>
+        </div>
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-xl">
+          <div className="text-2xl font-bold">{uniqueLyricists.length}</div>
+          <div className="text-red-100 text-sm">Lyricists</div>
         </div>
       </div>
 
@@ -290,12 +310,12 @@ const TamilSongsMobile = () => {
             </button>
           </div>
 
-          {/* Player Controls */}
+          {/* Player Controls - Light Blue */}
           <div className="flex items-center justify-center gap-4 mt-4">
             <button 
               onClick={() => setIsShuffled(!isShuffled)}
               className={`p-3 rounded-full transition-all ${
-                isShuffled ? 'bg-white text-pink-500' : 'bg-white/20 text-white hover:bg-white/30'
+                isShuffled ? 'bg-white text-pink-500' : 'bg-sky-400 text-white hover:bg-sky-500'
               }`}
             >
               <Shuffle className="w-5 h-5" />
@@ -303,7 +323,7 @@ const TamilSongsMobile = () => {
             
             <button 
               onClick={playPrevious}
-              className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-all"
+              className="p-3 bg-sky-400 text-white rounded-full hover:bg-sky-500 transition-all"
             >
               <SkipBack className="w-5 h-5" />
             </button>
@@ -317,60 +337,13 @@ const TamilSongsMobile = () => {
             
             <button 
               onClick={playNext}
-              className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-all"
+              className="p-3 bg-sky-400 text-white rounded-full hover:bg-sky-500 transition-all"
             >
               <SkipForward className="w-5 h-5" />
             </button>
           </div>
         </div>
       )}
-
-      {/* Recent Songs */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Your Playlist ({currentPlaylist.length})</h3>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {currentPlaylist.slice(0, 5).map((song, index) => (
-            <div 
-              key={song.id}
-              className={`p-4 rounded-lg border transition-all ${
-                currentSong?.id === song.id 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
-              }`}
-              onClick={() => {
-                const wasPlaying = isPlaying;
-                setCurrentSongIndex(index);
-                if (wasPlaying) {
-                  setTimeout(() => {
-                    const newSong = currentPlaylist[index];
-                    if (newSong) {
-                      openSong(newSong, playMode);
-                    }
-                  }, 100);
-                }
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  currentSong?.id === song.id && isPlaying 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {currentSong?.id === song.id && isPlaying ? (
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  ) : (
-                    <Music className="w-4 h-4" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800">{song.song}</div>
-                  <div className="text-sm text-gray-600">{song.movie} • {song.singer}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -420,7 +393,13 @@ const TamilSongsMobile = () => {
               <Legend 
                 verticalAlign="bottom" 
                 height={36}
-                wrapperStyle={{ fontSize: '12px' }}
+                wrapperStyle={{ 
+                  fontSize: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.9)',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  border: '1px solid #e5e7eb'
+                }}
               />
               <Tooltip />
             </PieChart>
@@ -448,7 +427,47 @@ const TamilSongsMobile = () => {
               <Legend 
                 verticalAlign="bottom" 
                 height={36}
-                wrapperStyle={{ fontSize: '12px' }}
+                wrapperStyle={{ 
+                  fontSize: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.9)',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  border: '1px solid #e5e7eb'
+                }}
+              />
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Top Lyricists</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={lyricistData}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                dataKey="value"
+              >
+                {lyricistData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={LYRICIST_COLORS[index % LYRICIST_COLORS.length]} 
+                  />
+                ))}
+              </Pie>
+              <Legend 
+                verticalAlign="bottom" 
+                height={36}
+                wrapperStyle={{ 
+                  fontSize: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.9)',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  border: '1px solid #e5e7eb'
+                }}
               />
               <Tooltip />
             </PieChart>
@@ -458,67 +477,72 @@ const TamilSongsMobile = () => {
     </div>
   );
 
-  const PlaylistView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">
-          Your Playlist ({currentPlaylist.length})
-        </h3>
-        <button
-          onClick={() => setShowFilters(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
-        >
-          Filters
-        </button>
-      </div>
-      
-      <div className="space-y-3">
-        {currentPlaylist.map((song, index) => (
-          <div 
-            key={song.id}
-            className={`p-4 rounded-lg border transition-all ${
-              currentSong?.id === song.id 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-200 bg-white'
-            }`}
-            onClick={() => {
-              const wasPlaying = isPlaying;
-              setCurrentSongIndex(index);
-              if (wasPlaying) {
-                setTimeout(() => {
-                  const newSong = currentPlaylist[index];
-                  if (newSong) {
-                    openSong(newSong, playMode);
-                  }
-                }, 100);
-              }
-            }}
+  const PlaylistView = () => {
+    // Sort playlist by song name
+    const sortedPlaylist = useMemo(() => {
+      return [...currentPlaylist].sort((a, b) => a.song.localeCompare(b.song));
+    }, [currentPlaylist]);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Your Playlist ({sortedPlaylist.length})
+          </h3>
+          <button
+            onClick={() => setShowFilters(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
           >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                currentSong?.id === song.id && isPlaying 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-600'
-              }`}>
-                {currentSong?.id === song.id && isPlaying ? (
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                ) : (
-                  <Music className="w-4 h-4" />
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-800">{song.song}</div>
-                <div className="text-sm text-gray-600">{song.movie} ({song.year})</div>
-                <div className="text-xs text-gray-500">
-                  {song.composer} • {song.singer}
+            Filters
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          {sortedPlaylist.map((song, index) => (
+            <div 
+              key={song.id}
+              className={`p-4 rounded-lg border transition-all ${
+                currentSong?.id === song.id 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 bg-white'
+              }`}
+              onClick={() => {
+                const wasPlaying = isPlaying;
+                const originalIndex = currentPlaylist.findIndex(s => s.id === song.id);
+                setCurrentSongIndex(originalIndex);
+                if (wasPlaying) {
+                  setTimeout(() => {
+                    openSong(song, playMode);
+                  }, 100);
+                }
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  currentSong?.id === song.id && isPlaying 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {currentSong?.id === song.id && isPlaying ? (
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                  ) : (
+                    <Music className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-800">{song.song}</div>
+                  <div className="text-sm text-gray-600">{song.movie} ({song.year})</div>
+                  <div className="text-xs text-gray-500">
+                    {song.composer} • {song.singer} • {song.lyricist}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -574,39 +598,39 @@ const TamilSongsMobile = () => {
           <button
             onClick={() => setCurrentView('charts')}
             className={`flex flex-col items-center py-2 px-4 rounded-lg transition-all ${
-              currentView === 'charts' 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600'
-            }`}
-          >
-            <BarChart3 className="w-5 h-5 mb-1" />
-            <span className="text-xs">Charts</span>
-          </button>
-          
-          <button
-            onClick={() => setCurrentView('playlist')}
-            className={`flex flex-col items-center py-2 px-4 rounded-lg transition-all ${
-              currentView === 'playlist' 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-600'
-            }`}
-          >
-            <Music className="w-5 h-5 mb-1" />
-            <span className="text-xs">Playlist</span>
-          </button>
-        </div>
-      </div>
+              currentView === 'charts
+               ? 'text-blue-600 bg-blue-50' 
+               : 'text-gray-600'
+           }`}
+         >
+           <BarChart3 className="w-5 h-5 mb-1" />
+           <span className="text-xs">Charts</span>
+         </button>
+         
+         <button
+           onClick={() => setCurrentView('playlist')}
+           className={`flex flex-col items-center py-2 px-4 rounded-lg transition-all ${
+             currentView === 'playlist' 
+               ? 'text-blue-600 bg-blue-50' 
+               : 'text-gray-600'
+           }`}
+         >
+           <Music className="w-5 h-5 mb-1" />
+           <span className="text-xs">Playlist</span>
+         </button>
+       </div>
+     </div>
 
-      {/* Filter Sidebar */}
-      {showFilters && (
-        <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowFilters(false)}>
-          <div 
-            className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Filter Header */}
-            <div className="p-4 border-b border-gray-200 bg-blue-600 text-white">
-              <div className="flex items-center justify-between">
+     {/* Filter Sidebar */}
+     {showFilters && (
+       <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowFilters(false)}>
+         <div 
+           className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform"
+           onClick={(e) => e.stopPropagation()}
+         >
+           {/* Filter Header */}
+           <div className="p-4 border-b border-gray-200 bg-blue-600 text-white">
+             <div className="flex items-center justify-between">
                <h3 className="text-lg font-semibold">Filters</h3>
                <button
                  onClick={() => setShowFilters(false)}
@@ -819,4 +843,4 @@ const TamilSongsMobile = () => {
  );
 };
 
-export default TamilSongsMobile;
+export default TamilSongsMobile;			  
