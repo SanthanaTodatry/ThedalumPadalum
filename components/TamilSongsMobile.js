@@ -344,7 +344,7 @@ const TamilSongsMobile = () => {
       </div>          
       )}
     </div>
-  );
+  )};
 
   const ChartsView = () => (
     <div className="space-y-6">
