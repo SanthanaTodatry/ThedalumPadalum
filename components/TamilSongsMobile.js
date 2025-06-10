@@ -46,7 +46,6 @@ const TamilSongsMobile = () => {
   // Audio state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [playMode, setPlayMode] = useState('spotify');
   const [isShuffled, setIsShuffled] = useState(false);
 
   // Filter functions
@@ -163,15 +162,9 @@ const TamilSongsMobile = () => {
   const currentSong = currentPlaylist[currentSongIndex] || null;
 
   // Audio control functions
-  const openSong = (song, mode) => {
-    let url;
-    if (mode === 'spotify') {
-      const query = `${song.song} ${song.singer}`;
-      url = `https://open.spotify.com/search/${encodeURIComponent(query)}`;
-    } else {
-      const query = `${song.song} ${song.movie} ${song.singer}`;
-      url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    }
+  const openSong = (song) => {
+    const query = `${song.song} ${song.movie} ${song.singer}`;
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     window.open(url, '_blank');
   };
 
@@ -182,7 +175,7 @@ const TamilSongsMobile = () => {
       setIsPlaying(false);
     } else {
       setIsPlaying(true);
-      openSong(currentSong, playMode);
+      openSong(currentSong);
     }
   };
 
@@ -194,7 +187,7 @@ const TamilSongsMobile = () => {
     if (isPlaying) {
       const nextSong = currentPlaylist[nextIndex];
       if (nextSong) {
-        openSong(nextSong, playMode);
+        openSong(nextSong);
       }
     }
   };
@@ -207,7 +200,7 @@ const TamilSongsMobile = () => {
     if (isPlaying) {
       const prevSong = currentPlaylist[prevIndex];
       if (prevSong) {
-        openSong(prevSong, playMode);
+        openSong(prevSong);
       }
     }
   };
@@ -272,7 +265,7 @@ const TamilSongsMobile = () => {
         </div>
       </div>
 
-      {/* Current Playing - FIXED BLUE BACKGROUND WITH WHITE BUTTONS */}
+      {/* Current Playing - YOUTUBE ONLY */}
       {currentSong && (
         <div className="bg-gradient-to-r from-sky-400 to-sky-500 text-white p-6 rounded-xl">
           <div className="flex items-center gap-4">
@@ -286,28 +279,11 @@ const TamilSongsMobile = () => {
             </div>
           </div>
           
-          {/* Play Mode Selection */}
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => setPlayMode('spotify')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                playMode === 'spotify' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-            >
-              🎵 Spotify
-            </button>
-            <button
-              onClick={() => setPlayMode('youtube')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                playMode === 'youtube' 
-                  ? 'bg-red-600 text-white' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-            >
-              🎬 YouTube
-            </button>
+          {/* YouTube Only Label */}
+          <div className="mt-4 text-center">
+            <div className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              🎬 YouTube Videos
+            </div>
           </div>
 
           {/* Player Controls - WHITE BUTTONS ON BLUE BACKGROUND */}
@@ -512,7 +488,7 @@ const TamilSongsMobile = () => {
                 setCurrentSongIndex(originalIndex);
                 if (wasPlaying) {
                   setTimeout(() => {
-                    openSong(song, playMode);
+                    openSong(song);
                   }, 100);
                 }
               }}
