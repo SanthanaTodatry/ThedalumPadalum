@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
 import YouTube from 'react-youtube';
+import MindBlowingVisualizations from './MindBlowingVisualizations';
 
 const CleanYouTubePlayer = ({ 
   song, 
@@ -586,159 +587,17 @@ const TamilSongsVisualization = () => {
           </div>
         </div>
 
-        {/* Panel 2: Graphs */}
+        {/* Panel 2: Mind-Blowing Visualizations */}
         <div className="flex-1 p-4 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4 h-full">
-            {/* Line Chart - Songs by Year */}
-            <div className="bg-white p-4 rounded-lg border border-blue-200">
-              <h3 className="text-lg font-medium text-blue-800 mb-4">Songs by Year (Click to filter)</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={yearData} onClick={handleYearClick}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeWidth={0.5} />
-                  <XAxis dataKey="year" stroke="#64748b" fontSize={12} style={{ cursor: 'pointer' }} />
-                  <YAxis stroke="#64748b" fontSize={12} allowDecimals={false} />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke={chartFilters.year ? "#dc2626" : "#2563eb"}
-                    strokeWidth={chartFilters.year ? 2 : 1.5}
-                    dot={{ fill: chartFilters.year ? "#dc2626" : "#2563eb", strokeWidth: 1, r: 3, cursor: 'pointer' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Pie Chart - Singers */}
-            <div className="bg-white p-4 rounded-lg border border-blue-200">
-              <h3 className="text-lg font-medium text-blue-800 mb-4">Top Singers (Click to filter)</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={singerData}
-                    cx="45%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    strokeWidth={0.5}
-                    onClick={handleSingerClick}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {singerData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={chartFilters.singer === entry.name ? "#dc2626" : SINGER_COLORS[index % SINGER_COLORS.length]} 
-                      />
-                    ))}
-                  </Pie>
-                  <Legend 
-                    verticalAlign="middle" 
-                    align="right" 
-                    layout="vertical"
-                    wrapperStyle={{ 
-                      fontSize: '12px', 
-                      paddingLeft: '10px', 
-                      cursor: 'pointer',
-                      backgroundColor: 'rgba(255,255,255,0.9)',
-                      borderRadius: '8px',
-                      padding: '8px',
-                      border: '1px solid #e5e7eb'
-                    }}
-                    onClick={handleSingerLegendClick}
-                  />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Pie Chart - Composers */}
-            <div className="bg-white p-4 rounded-lg border border-blue-200">
-              <h3 className="text-lg font-medium text-blue-800 mb-4">Top Composers (Click to filter)</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={composerData}
-                    cx="45%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    strokeWidth={0.5}
-                    onClick={handleComposerClick}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {composerData.map((entry, index) => (
-                     <Cell 
-                       key={`cell-${index}`} 
-                       fill={chartFilters.composer === entry.name ? "#dc2626" : COMPOSER_COLORS[index % COMPOSER_COLORS.length]} 
-                     />
-                   ))}
-                 </Pie>
-                 <Legend 
-                   verticalAlign="middle" 
-                   align="right" 
-                   layout="vertical"
-                   wrapperStyle={{ 
-                     fontSize: '12px', 
-                     paddingLeft: '10px', 
-                     cursor: 'pointer',
-                     backgroundColor: 'rgba(255,255,255,0.9)',
-                     borderRadius: '8px',
-                     padding: '8px',
-                     border: '1px solid #e5e7eb'
-                   }}
-                   onClick={handleComposerLegendClick}
-                 />
-                 <Tooltip />
-               </PieChart>
-             </ResponsiveContainer>
-           </div>
-
-           {/* Pie Chart - Lyricists */}
-           <div className="bg-white p-4 rounded-lg border border-blue-200">
-             <h3 className="text-lg font-medium text-blue-800 mb-4">Top Lyricists (Click to filter)</h3>
-             <ResponsiveContainer width="100%" height={250}>
-               <PieChart>
-                 <Pie
-                   data={lyricistData}
-                   cx="45%"
-                   cy="50%"
-                   outerRadius={80}
-                   fill="#8884d8"
-                   dataKey="value"
-                   strokeWidth={0.5}
-                   onClick={handleLyricistClick}
-                   style={{ cursor: 'pointer' }}
-                 >
-                   {lyricistData.map((entry, index) => (
-                     <Cell 
-                       key={`cell-${index}`} 
-                       fill={chartFilters.lyricist === entry.name ? "#dc2626" : LYRICIST_COLORS[index % LYRICIST_COLORS.length]} 
-                     />
-                   ))}
-                 </Pie>
-                 <Legend 
-                   verticalAlign="middle" 
-                   align="right" 
-                   layout="vertical"
-                   wrapperStyle={{ 
-                     fontSize: '12px', 
-                     paddingLeft: '10px', 
-                     cursor: 'pointer',
-                     backgroundColor: 'rgba(255,255,255,0.9)',
-                     borderRadius: '8px',
-                     padding: '8px',
-                     border: '1px solid #e5e7eb'
-                   }}
-                   onClick={handleLyricistLegendClick}
-                 />
-                 <Tooltip />
-               </PieChart>
-             </ResponsiveContainer>
-           </div>
-         </div>
-       </div>
+          <MindBlowingVisualizations 
+            filteredSongs={filteredSongs}
+            currentFilters={chartFilters}
+            onYearClick={handleYearClick}
+            onSingerClick={handleSingerClick}
+            onComposerClick={handleComposerClick}
+            onLyricistClick={handleLyricistClick}
+          />
+        </div>
 
        {/* Panel 3: Clean Player + Playlist Layout */}
        <div className="w-80 bg-white border-l border-blue-200 flex flex-col">
