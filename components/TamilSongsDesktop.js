@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+-import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
-import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
+import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Monitor } from 'lucide-react';
+import YouTubePlayer from './YouTubePlayer';
 
 const TamilSongsVisualization = () => {
   // Mock data for Tamil movie songs
@@ -44,6 +45,7 @@ const TamilSongsVisualization = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [showEmbedPlayer, setShowEmbedPlayer] = useState(false);
 
   // Filter functions
   const toggleFilter = (item, selectedItems, setSelectedItems) => {
@@ -232,11 +234,13 @@ const TamilSongsVisualization = () => {
   const togglePlay = () => {
     if (!currentSong) return;
     
-    if (isPlaying) {
-      setIsPlaying(false);
-    } else {
-      setIsPlaying(true);
+    if (!showEmbedPlayer) {
+      // If embed player is not shown, open in new tab
       openSong(currentSong);
+      setIsPlaying(true);
+    } else {
+      // If embed player is shown, it will handle play/pause
+      setIsPlaying(!isPlaying);
     }
   };
 
@@ -244,26 +248,12 @@ const TamilSongsVisualization = () => {
     if (currentPlaylist.length === 0) return;
     const nextIndex = (currentSongIndex + 1) % currentPlaylist.length;
     setCurrentSongIndex(nextIndex);
-    
-    if (isPlaying) {
-      const nextSong = currentPlaylist[nextIndex];
-      if (nextSong) {
-        openSong(nextSong);
-      }
-    }
   };
 
   const playPrevious = () => {
     if (currentPlaylist.length === 0) return;
     const prevIndex = currentSongIndex === 0 ? currentPlaylist.length - 1 : currentSongIndex - 1;
     setCurrentSongIndex(prevIndex);
-    
-    if (isPlaying) {
-      const prevSong = currentPlaylist[prevIndex];
-      if (prevSong) {
-        openSong(prevSong);
-      }
-    }
   };
 
   // Reset current song index when playlist changes
@@ -640,6 +630,33 @@ const TamilSongsVisualization = () => {
        <div className="w-80 bg-white border-l border-blue-200 flex flex-col">
          {/* Audio Player Header */}
          <div className="p-4 border-b border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100">
+           {/* Player Mode Toggle */}
+           <div className="mb-4">
+             <label className="block text-xs text-blue-600 font-medium mb-2">PLAYER MODE</label>
+             <div className="flex gap-2">
+               <button
+                 onClick={() => setShowEmbedPlayer(false)}
+                 className={`flex-1 px-3 py-2 text-xs rounded transition-colors ${
+                   !showEmbedPlayer 
+                     ? 'bg-blue-600 text-white' 
+                     : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-50'
+                 }`}
+               >
+                 🔗 Quick Link
+               </button>
+               <button
+                 onClick={() => setShowEmbedPlayer(true)}
+                 className={`flex-1 px-3 py-2 text-xs rounded transition-colors ${
+                   showEmbedPlayer 
+                     ? 'bg-red-600 text-white' 
+                     : 'bg-white text-red-600 border border-red-300 hover:bg-red-50'
+                 }`}
+               >
+                 📺 Embed Player
+               </button>
+             </div>
+           </div>
+
            {/* Now Playing */}
            {currentSong && (
              <div className="mb-3">
@@ -649,48 +666,67 @@ const TamilSongsVisualization = () => {
              </div>
            )}
 
-           {/* Main Controls */}
-           <div className="flex items-center justify-center gap-3 mb-3">
-             <button 
-               onClick={() => setIsShuffled(!isShuffled)}
-               className={`p-2 rounded transition-colors ${isShuffled ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 hover:bg-blue-50'}`}
-               title="Shuffle"
-             >
-               <Shuffle className="w-4 h-4" />
-             </button>
-             
-             <button 
-               onClick={playPrevious}
-               className="p-2 bg-white text-blue-600 rounded hover:bg-blue-50 transition-colors"
-               disabled={currentPlaylist.length === 0}
-             >
-               <SkipBack className="w-4 h-4" />
-             </button>
-             
-             <button 
-               onClick={togglePlay}
-               className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
-               disabled={currentPlaylist.length === 0}
-             >
-               {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-             </button>
-             
-             <button 
-               onClick={playNext}
-               className="p-2 bg-white text-blue-600 rounded hover:bg-blue-50 transition-colors"
-               disabled={currentPlaylist.length === 0}
-             >
-               <SkipForward className="w-4 h-4" />
-             </button>
-           </div>
+           {/* Main Controls - Only show if not using embed player */}
+           {!showEmbedPlayer && (
+             <>
+               <div className="flex items-center justify-center gap-3 mb-3">
+                 <button 
+                   onClick={() => setIsShuffled(!isShuffled)}
+                   className={`p-2 rounded transition-colors ${isShuffled ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 hover:bg-blue-50'}`}
+                   title="Shuffle"
+                 >
+                   <Shuffle className="w-4 h-4" />
+                 </button>
+                 
+                 <button 
+                   onClick={playPrevious}
+                   className="p-2 bg-white text-blue-600 rounded hover:bg-blue-50 transition-colors"
+                   disabled={currentPlaylist.length === 0}
+                 >
+                   <SkipBack className="w-4 h-4" />
+                 </button>
+                 
+                 <button 
+                   onClick={togglePlay}
+                   className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
+                   disabled={currentPlaylist.length === 0}
+                 >
+                   {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                 </button>
+                 
+                 <button 
+                   onClick={playNext}
+                   className="p-2 bg-white text-blue-600 rounded hover:bg-blue-50 transition-colors"
+                   disabled={currentPlaylist.length === 0}
+                 >
+                   <SkipForward className="w-4 h-4" />
+                 </button>
+               </div>
 
-           {/* Status */}
-           <div className="text-center">
-             <div className="text-xs text-slate-500">
-               {isPlaying ? '🎬 Playing on YouTube' : '⏹️ Ready to play'}
-             </div>
-           </div>
+               {/* Status */}
+               <div className="text-center">
+                 <div className="text-xs text-slate-500">
+                   {isPlaying ? '🎬 Opens in YouTube' : '⏹️ Ready to play'}
+                 </div>
+               </div>
+             </>
+           )}
          </div>
+
+         {/* Embedded YouTube Player */}
+         {showEmbedPlayer && currentSong && (
+           <div className="border-b border-blue-200">
+             <YouTubePlayer
+               song={currentSong}
+               isPlaying={isPlaying}
+               onPlay={() => setIsPlaying(true)}
+               onPause={() => setIsPlaying(false)}
+               onNext={playNext}
+               onPrevious={playPrevious}
+               className="rounded-none border-0"
+             />
+           </div>
+         )}
 
          {/* Songs List */}
          <div className="flex-1 p-4 overflow-y-auto">
@@ -709,7 +745,7 @@ const TamilSongsVisualization = () => {
                  onClick={() => {
                    const wasPlaying = isPlaying;
                    setCurrentSongIndex(index);
-                   if (wasPlaying) {
+                   if (wasPlaying && !showEmbedPlayer) {
                      setTimeout(() => {
                        const newSong = currentPlaylist[index];
                        if (newSong) {
