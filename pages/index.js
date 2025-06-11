@@ -1,5 +1,5 @@
-import TamilSongsMobile from '../components/TamilSongsMobile'
+import TamilSongsApp from '../components/TamilSongsApp'
 
 export default function Home() {
-  return <TamilSongsMobile />
+  return <TamilSongsApp />
 }
