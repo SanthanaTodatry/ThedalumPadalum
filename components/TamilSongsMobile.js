@@ -1,7 +1,155 @@
-import { useState, useMemo } from 'react' ;
+import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
-import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Menu, X, BarChart3, Music, Home, Monitor } from 'lucide-react';
-import YouTubePlayer from './YouTubePlayer';
+import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Menu, X, BarChart3, Music, Home } from 'lucide-react';
+import YouTube from 'react-youtube';
+
+const CleanYouTubePlayer = ({ 
+  song, 
+  isPlaying, 
+  onPlay, 
+  onPause, 
+  onNext, 
+  onPrevious,
+  className = ""
+}) => {
+  const [videoId, setVideoId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [player, setPlayer] = useState(null);
+
+  const YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+
+  // Search for video when song changes
+  useEffect(() => {
+    if (song && !videoId) {
+      searchForVideo(song);
+    }
+  }, [song]);
+
+  // Auto-advance when playing state changes
+  useEffect(() => {
+    if (player && videoId) {
+      if (isPlaying) {
+        player.playVideo();
+      } else {
+        player.pauseVideo();
+      }
+    }
+  }, [isPlaying, player, videoId]);
+
+  const searchForVideo = async (song) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const query = `${song.song} ${song.movie} ${song.singer}`;
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1&key=${YOUTUBE_API_KEY}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to search YouTube');
+      }
+      
+      const data = await response.json();
+      
+      if (data.items && data.items.length > 0) {
+        setVideoId(data.items[0].id.videoId);
+      } else {
+        throw new Error('No videos found');
+      }
+    } catch (error) {
+      console.error('YouTube search error:', error);
+      setError(error.message);
+    }
+    
+    setIsLoading(false);
+  };
+
+  // YouTube player options - Clean mobile version
+  const opts = {
+    width: '100%',
+    height: '200',
+    playerVars: {
+      autoplay: 0,
+      controls: 0, // Hide YouTube controls
+      rel: 0,
+      modestbranding: 1,
+      fs: 0, // Disable fullscreen
+      iv_load_policy: 3, // Hide annotations
+      showinfo: 0, // Hide video info
+      disablekb: 1, // Disable keyboard controls
+    },
+  };
+
+  // Handle player events
+  const onReady = (event) => {
+    setPlayer(event.target);
+  };
+
+  const onStateChange = (event) => {
+    // YouTube player states: 0 (ended), 1 (playing), 2 (paused)
+    if (event.data === 1) {
+      onPlay && onPlay();
+    } else if (event.data === 2) {
+      onPause && onPause();
+    } else if (event.data === 0) {
+      // Video ended, auto-advance to next
+      onNext && onNext();
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className={`bg-white rounded-lg ${className}`}>
+        <div className="h-48 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto mb-3"></div>
+            <p className="text-gray-600 text-sm">🔍 Finding video...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !videoId) {
+    return (
+      <div className={`bg-white rounded-lg ${className}`}>
+        <div className="h-48 flex items-center justify-center">
+          <div className="text-center text-red-500">
+            <p className="font-medium text-sm">Video not found</p>
+            <p className="text-xs text-gray-600 mt-1">{error}</p>
+            <button
+              onClick={() => searchForVideo(song)}
+              className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              🔄 Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`bg-white rounded-lg ${className}`}>
+      {/* Clean YouTube Player */}
+      {videoId && (
+        <div className="relative">
+          <YouTube
+            videoId={videoId}
+            opts={opts}
+            onReady={onReady}
+            onStateChange={onStateChange}
+            className="youtube-player"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TamilSongsMobile = () => {
   // Mock data for Tamil movie songs
@@ -48,7 +196,6 @@ const TamilSongsMobile = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
-  const [showEmbedPlayer, setShowEmbedPlayer] = useState(false);
 
   // Filter functions
   const toggleFilter = (item, selectedItems, setSelectedItems) => {
@@ -164,21 +311,8 @@ const TamilSongsMobile = () => {
   const currentSong = currentPlaylist[currentSongIndex] || null;
 
   // Audio control functions
-  const openSong = (song) => {
-    const query = `${song.song} ${song.movie} ${song.singer}`;
-    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    window.open(url, '_blank');
-  };
-
   const togglePlay = () => {
-    if (!currentSong) return;
-    
-    if (!showEmbedPlayer) {
-      openSong(currentSong);
-      setIsPlaying(true);
-    } else {
-      setIsPlaying(!isPlaying);
-    }
+    setIsPlaying(!isPlaying);
   };
 
   const playNext = () => {
@@ -253,95 +387,77 @@ const TamilSongsMobile = () => {
         </div>
       </div>
 
-      {/* Current Playing */}
+      {/* Current Playing - Clean Layout */}
       {currentSong && (
         <div className="bg-gradient-to-r from-sky-400 to-sky-500 text-white rounded-xl overflow-hidden">
-          <div className="p-6">
+          {/* Song Info */}
+          <div className="p-4">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <Music className="w-8 h-8" />
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <Music className="w-6 h-6" />
               </div>
               <div className="flex-1">
                 <div className="font-bold text-lg">{currentSong.song}</div>
-                <div className="text-sky-100">{currentSong.movie}</div>
-                <div className="text-sky-200 text-sm">{currentSong.singer}</div>
+                <div className="text-sky-100 text-sm">{currentSong.movie}</div>
+                <div className="text-sky-200 text-xs">{currentSong.singer}</div>
               </div>
             </div>
-            
-            {/* Player Mode Toggle */}
-            <div className="mb-4 flex gap-2">
-              <button
-                onClick={() => setShowEmbedPlayer(false)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  !showEmbedPlayer 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-              >
-                🔗 Quick Link
-              </button>
-              <button
-                onClick={() => setShowEmbedPlayer(true)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  showEmbedPlayer 
-                    ? 'bg-red-600 text-white' 
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-              >
-                📺 Embed Player
-              </button>
-            </div>
-
-            {/* Player Controls - Only show if not using embed player */}
-            {!showEmbedPlayer && (
-              <div className="flex items-center justify-center gap-4">
-                <button 
-                  onClick={() => setIsShuffled(!isShuffled)}
-                  className={`p-3 rounded-full transition-all ${
-                    isShuffled ? 'bg-blue-600 text-white' : 'bg-white/90 text-sky-600 hover:bg-white'
-                  }`}
-                >
-                  <Shuffle className="w-5 h-5" />
-                </button>
-                
-                <button 
-                  onClick={playPrevious}
-                  className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
-                >
-                  <SkipBack className="w-5 h-5" />
-                </button>
-                
-                <button 
-                  onClick={togglePlay}
-                  className="p-4 bg-white text-sky-600 rounded-full hover:scale-105 transition-all shadow-lg"
-                >
-                  {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                </button>
-                
-                <button 
-                  onClick={playNext}
-                  className="p-3 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
-                >
-                  <SkipForward className="w-5 h-5" />
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Embedded YouTube Player */}
-          {showEmbedPlayer && currentSong && (
-            <div className="bg-white">
-              <YouTubePlayer
-                song={currentSong}
-                isPlaying={isPlaying}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onNext={playNext}
-                onPrevious={playPrevious}
-                className="rounded-none border-0"
-              />
+          {/* 1. PLAYER ON TOP */}
+          <div className="bg-white">
+            <CleanYouTubePlayer
+              song={currentSong}
+              isPlaying={isPlaying}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onNext={playNext}
+              onPrevious={playPrevious}
+              className="rounded-none border-0"
+            />
+          </div>
+
+          {/* 2. CONTROLS BELOW */}
+          <div className="p-4">
+            <div className="flex items-center justify-center gap-4">
+              <button 
+                onClick={() => setIsShuffled(!isShuffled)}
+                className={`p-2 rounded-full transition-all ${
+                  isShuffled ? 'bg-blue-600 text-white' : 'bg-white/90 text-sky-600 hover:bg-white'
+                }`}
+              >
+                <Shuffle className="w-4 h-4" />
+              </button>
+              
+              <button 
+                onClick={playPrevious}
+                className="p-2 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
+              >
+                <SkipBack className="w-4 h-4" />
+              </button>
+              
+              <button 
+                onClick={togglePlay}
+                className="p-3 bg-white text-sky-600 rounded-full hover:scale-105 transition-all shadow-lg"
+              >
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              </button>
+              
+              <button 
+                onClick={playNext}
+                className="p-2 bg-white/90 text-sky-600 rounded-full hover:bg-white transition-all"
+              >
+                <SkipForward className="w-4 h-4" />
+              </button>
             </div>
-          )}
+
+            {/* Status */}
+            <div className="text-center mt-3">
+              <div className="text-xs text-sky-100">
+                📺 Auto-advancing playlist
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -507,14 +623,8 @@ const TamilSongsMobile = () => {
                   : 'border-gray-200 bg-white'
               }`}
               onClick={() => {
-                const wasPlaying = isPlaying;
                 const originalIndex = currentPlaylist.findIndex(s => s.id === song.id);
                 setCurrentSongIndex(originalIndex);
-                if (wasPlaying && !showEmbedPlayer) {
-                  setTimeout(() => {
-                    openSong(song);
-                  }, 100);
-                }
               }}
             >
               <div className="flex items-center gap-3">
