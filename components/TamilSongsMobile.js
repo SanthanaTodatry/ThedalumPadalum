@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Menu, X, BarChart3, Music, Home, Monitor } from 'lucide-react';
 import YouTubePlayer from './YouTubePlayer';
