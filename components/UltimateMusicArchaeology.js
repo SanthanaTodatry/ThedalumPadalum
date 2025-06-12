@@ -150,9 +150,9 @@ const UltimateMusicArchaeology = ({
     const container = d3.select(timelineRef.current);
     container.selectAll("*").remove();
 
-    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const margin = { top: 10, right: 30, bottom: 30, left: 10 };
     const width = 800 - margin.left - margin.right;
-    const height = 120 - margin.top - margin.bottom;
+    const height = 80 - margin.top - margin.bottom;
 
     const svg = container
       .append("svg")
@@ -267,13 +267,10 @@ const UltimateMusicArchaeology = ({
         onYearClick({ activePayload: [{ payload: { year: d.year } }] });
       });
 
-    // Axes
+    // Axes - only X axis
     g.append("g")
       .attr("transform", `translate(0,${height})`)
       .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
-
-    g.append("g")
-      .call(d3.axisLeft(yScale));
 
     // Year range brush
     const brush = d3.brushX()
@@ -316,127 +313,151 @@ const UltimateMusicArchaeology = ({
   }, [filteredArtists, activeTab, zoomLevel, highlightedArtist]);
 
   const drawCollaborationNetwork = (svg, collaborations, width, height) => {
-    const simulation = d3.forceSimulation()
-      .force("link", d3.forceLink().id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius(30));
+    // Stream/Sankey-style visualization for collaborations
+    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
 
-    // Create nodes and links
-    const nodes = collaborations.map(collab => ({
-      id: collab.id,
-      ...collab,
-      size: collab.songs.length * 5 + 10,
-      decade: Math.floor(Math.min(...collab.years) / 10) * 10
-    }));
+    const g = svg.append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const links = [];
-    // Create links between collaborations that share artists
-    for (let i = 0; i < collaborations.length; i++) {
-      for (let j = i + 1; j < collaborations.length; j++) {
-        const a = collaborations[i];
-        const b = collaborations[j];
-        const shared = [
-          a.composer === b.composer,
-          a.singer === b.singer,
-          a.lyricist === b.lyricist
-        ].filter(Boolean).length;
-        
-        if (shared > 0) {
-          links.push({
-            source: a.id,
-            target: b.id,
-            strength: shared,
-            type: shared === 3 ? 'exact' : shared === 2 ? 'strong' : 'weak'
-          });
-        }
-      }
-    }
+    // Group collaborations by decade for streams
+    const decades = d3.group(collaborations, d => Math.floor(Math.min(...d.years) / 10) * 10);
+    
+    // Create streams for each decade
+    const streams = Array.from(decades, ([decade, collabs]) => ({
+      decade,
+      collaborations: collabs,
+      composers: [...new Set(collabs.map(c => c.composer))],
+      singers: [...new Set(collabs.map(c => c.singer))],
+      lyricists: [...new Set(collabs.map(c => c.lyricist))],
+      totalSongs: collabs.reduce((sum, c) => sum + c.songs.length, 0)
+    })).sort((a, b) => a.decade - b.decade);
+
+    const xScale = d3.scaleBand()
+      .domain(streams.map(d => d.decade))
+      .range([0, innerWidth])
+      .padding(0.1);
+
+    const maxSongs = d3.max(streams, d => d.totalSongs);
+    const yScale = d3.scaleLinear()
+      .domain([0, maxSongs])
+      .range([innerHeight, 0]);
 
     const colorScale = d3.scaleOrdinal()
       .domain([1960, 1970, 1980, 1990, 2000, 2010, 2020])
       .range(['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FFB74D']);
 
-    // Add links
-    const link = svg.append("g")
-      .selectAll("line")
-      .data(links)
-      .enter()
-      .append("line")
-      .attr("stroke", d => d.type === 'exact' ? '#ff4757' : d.type === 'strong' ? '#5352ed' : '#a4b0be')
-      .attr("stroke-opacity", d => d.type === 'exact' ? 0.8 : d.type === 'strong' ? 0.6 : 0.3)
-      .attr("stroke-width", d => d.strength * 2);
+    // Draw decade streams
+    streams.forEach((stream, i) => {
+      const x = xScale(stream.decade);
+      const barWidth = xScale.bandwidth();
+      
+      // Main stream bar
+      g.append("rect")
+        .attr("x", x)
+        .attr("y", yScale(stream.totalSongs))
+        .attr("width", barWidth)
+        .attr("height", innerHeight - yScale(stream.totalSongs))
+        .attr("fill", colorScale(stream.decade))
+        .attr("opacity", 0.7)
+        .attr("rx", 4)
+        .style("cursor", "pointer")
+        .on("mouseover", function(event) {
+          d3.select(this).attr("opacity", 1);
+          
+          const tooltip = d3.select("body").append("div")
+            .attr("class", "stream-tooltip")
+            .style("position", "absolute")
+            .style("background", "rgba(0,0,0,0.9)")
+            .style("color", "white")
+            .style("padding", "12px")
+            .style("border-radius", "8px")
+            .style("font-size", "13px")
+            .style("pointer-events", "none")
+            .style("z-index", 1000)
+            .style("max-width", "250px");
 
-    // Add nodes
-    const node = svg.append("g")
-      .selectAll("circle")
-      .data(nodes)
-      .enter()
-      .append("circle")
-      .attr("r", d => Math.sqrt(d.size) * zoomLevel)
-      .attr("fill", d => colorScale(d.decade))
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 2)
-      .style("cursor", "pointer")
-      .call(d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended))
-      .on("mouseover", function(event, d) {
-        d3.select(this)
-          .attr("r", Math.sqrt(d.size) * zoomLevel * 1.5)
-          .attr("stroke-width", 4);
+          tooltip.html(`
+            <strong>${stream.decade}s Era</strong><br/>
+            Total Songs: ${stream.totalSongs}<br/>
+            Collaborations: ${stream.collaborations.length}<br/>
+            Composers: ${stream.composers.length}<br/>
+            Singers: ${stream.singers.length}<br/>
+            Lyricists: ${stream.lyricists.length}
+          `)
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 10) + "px");
+        })
+        .on("mouseout", function() {
+          d3.select(this).attr("opacity", 0.7);
+          d3.selectAll(".stream-tooltip").remove();
+        })
+        .on("click", function() {
+          setSelectedYearRange([stream.decade, stream.decade + 9]);
+        });
 
-        // Highlight connected links
-        link.style("stroke-opacity", l => 
-          l.source.id === d.id || l.target.id === d.id ? 1 : 0.1);
+      // Add decade label
+      g.append("text")
+        .attr("x", x + barWidth / 2)
+        .attr("y", innerHeight + 15)
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .style("fill", "#666")
+        .text(`${stream.decade}s`);
 
-        showTooltip(event, d, 'collaboration');
-      })
-      .on("mouseout", function(event, d) {
-        d3.select(this)
-          .attr("r", Math.sqrt(d.size) * zoomLevel)
-          .attr("stroke-width", 2);
+      // Add song count label on bar
+      if (stream.totalSongs > 5) {
+        g.append("text")
+          .attr("x", x + barWidth / 2)
+          .attr("y", yScale(stream.totalSongs) - 5)
+          .attr("text-anchor", "middle")
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
+          .style("fill", "#333")
+          .text(stream.totalSongs);
+      }
 
-        link.style("stroke-opacity", d => d.type === 'exact' ? 0.8 : d.type === 'strong' ? 0.6 : 0.3);
-        hideTooltip();
-      })
-      .on("click", function(event, d) {
-        setHighlightedArtist(d.id);
-      });
+      // Draw collaboration flow lines to next decade
+      if (i < streams.length - 1) {
+        const nextStream = streams[i + 1];
+        const sharedArtists = stream.composers.filter(c => nextStream.composers.includes(c)).length +
+                             stream.singers.filter(s => nextStream.singers.includes(s)).length +
+                             stream.lyricists.filter(l => nextStream.lyricists.includes(l)).length;
+        
+        if (sharedArtists > 0) {
+          const flowHeight = Math.max(2, sharedArtists * 2);
+          const startX = x + barWidth;
+          const endX = xScale(nextStream.decade);
+          const midX = (startX + endX) / 2;
+          const startY = yScale(stream.totalSongs / 2);
+          const endY = yScale(nextStream.totalSongs / 2);
 
-    simulation
-      .nodes(nodes)
-      .on("tick", () => {
-        link
-          .attr("x1", d => d.source.x)
-          .attr("y1", d => d.source.y)
-          .attr("x2", d => d.target.x)
-          .attr("y2", d => d.target.y);
+          // Curved flow line
+          const path = d3.path();
+          path.moveTo(startX, startY);
+          path.bezierCurveTo(midX, startY, midX, endY, endX, endY);
 
-        node
-          .attr("cx", d => d.x)
-          .attr("cy", d => d.y);
-      });
+          g.append("path")
+            .attr("d", path.toString())
+            .attr("stroke", "#999")
+            .attr("stroke-width", flowHeight)
+            .attr("stroke-opacity", 0.3)
+            .attr("fill", "none");
+        }
+      }
+    });
 
-    simulation.force("link").links(links);
-
-    function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      d.fx = d.x;
-      d.fy = d.y;
-    }
-
-    function dragged(event, d) {
-      d.fx = event.x;
-      d.fy = event.y;
-    }
-
-    function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
-    }
+    // Add title
+    g.append("text")
+      .attr("x", innerWidth / 2)
+      .attr("y", -5)
+      .attr("text-anchor", "middle")
+      .style("font-size", "14px")
+      .style("font-weight", "bold")
+      .style("fill", "#666")
+      .text("Collaboration Streams Through Decades");
   };
 
   const drawArtistVisualization = (svg, artists, type, width, height) => {
@@ -481,8 +502,8 @@ const UltimateMusicArchaeology = ({
       })
       .on("click", function(event, d) {
         setHighlightedArtist(d.data.name);
-        if (type === 'composers') onComposerClick({ name: d.data.name });
         if (type === 'singers') onSingerClick({ name: d.data.name });
+        if (type === 'composers') onComposerClick({ name: d.data.name });
         if (type === 'lyricists') onLyricistClick({ name: d.data.name });
       });
 
@@ -554,13 +575,20 @@ const UltimateMusicArchaeology = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header Controls */}
-      <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            🎵 Tamil Music Archaeology
-          </h2>
-          <div className="flex items-center gap-4">
+      {/* Compact Timeline - Above Tabs */}
+      <div className="bg-white rounded-lg p-3 mb-3 shadow-sm border">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm text-gray-600">
+            🕒 <strong>{selectedYearRange[0]} - {selectedYearRange[1]}</strong>
+            {selectedYearRange[0] !== 1960 || selectedYearRange[1] !== 2024 ? (
+              <span className="ml-2 text-blue-600">
+                ({selectedYearRange[1] - selectedYearRange[0] + 1} years)
+              </span>
+            ) : (
+              <span className="ml-2 text-green-600">(All years)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -569,11 +597,65 @@ const UltimateMusicArchaeology = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search any artist..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48"
               />
             </div>
+            {/* Reset */}
+            <button
+              onClick={resetView}
+              className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg"
+              title="Reset View"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div ref={timelineRef}></div>
+      </div>
 
-            {/* Zoom Controls */}
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg p-3 mb-3 shadow-sm border">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          {[
+            { key: 'collaborations', label: '🤝 Collaborations', icon: Users },
+            { key: 'singers', label: '🎤 Singers', icon: Mic },
+            { key: 'composers', label: '🎼 Composers', icon: Music },
+            { key: 'lyricists', label: '✍️ Lyricists', icon: PenTool }
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                activeTab === key
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-white hover:shadow-sm'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Visualization */}
+      <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">
+            {activeTab === 'collaborations' && `🤝 ${filteredArtists.collaborations.length} Collaboration Networks`}
+            {activeTab === 'singers' && `🎤 ${filteredArtists.singers.length} Singers`}
+            {activeTab === 'composers' && `🎼 ${filteredArtists.composers.length} Composers`}
+            {activeTab === 'lyricists' && `✍️ ${filteredArtists.lyricists.length} Lyricists`}
+          </h3>
+          
+          {/* Zoom Controls - Inside Chart Panel */}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              {activeTab === 'collaborations' 
+                ? 'Click decades • Hover for details • Streams show collaboration flow'
+                : 'Circle size = activity • Hover for details • Click to filter'
+              }
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.2))}
@@ -593,76 +675,6 @@ const UltimateMusicArchaeology = ({
                 <ZoomIn className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Reset */}
-            <button
-              onClick={resetView}
-              className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg"
-              title="Reset View"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Year Range Display */}
-        <div className="text-sm text-gray-600 mb-4">
-          🕒 Viewing: <strong>{selectedYearRange[0]} - {selectedYearRange[1]}</strong>
-          {selectedYearRange[0] !== 1960 || selectedYearRange[1] !== 2024 ? (
-            <span className="ml-2 text-blue-600">
-              ({selectedYearRange[1] - selectedYearRange[0] + 1} years selected)
-            </span>
-          ) : (
-            <span className="ml-2 text-green-600">(Complete timeline)</span>
-          )}
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          {[
-            { key: 'collaborations', label: '🤝 Collaborations', icon: Users },
-            { key: 'composers', label: '🎼 Composers', icon: Music },
-            { key: 'singers', label: '🎤 Singers', icon: Mic },
-            { key: 'lyricists', label: '✍️ Lyricists', icon: PenTool }
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                activeTab === key
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-white hover:shadow-sm'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Global Timeline */}
-      <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">
-          📊 Global Timeline - Brush to Select Years
-        </h3>
-        <div ref={timelineRef}></div>
-      </div>
-
-      {/* Main Visualization */}
-      <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">
-            {activeTab === 'collaborations' && `🤝 ${filteredArtists.collaborations.length} Collaboration Networks`}
-            {activeTab === 'composers' && `🎼 ${filteredArtists.composers.length} Composers`}
-            {activeTab === 'singers' && `🎤 ${filteredArtists.singers.length} Singers`}
-            {activeTab === 'lyricists' && `✍️ ${filteredArtists.lyricists.length} Lyricists`}
-          </h3>
-          <div className="text-sm text-gray-500">
-            {activeTab === 'collaborations' 
-              ? 'Drag nodes • Hover for details • Click to focus'
-              : 'Circle size = activity • Hover for details • Click to filter'
-            }
           </div>
         </div>
         
@@ -671,23 +683,23 @@ const UltimateMusicArchaeology = ({
         </div>
       </div>
 
-      {/* Stats Summary */}
-      <div className="mt-4 grid grid-cols-4 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-blue-600">{filteredArtists.collaborations.length}</div>
-          <div className="text-sm text-blue-700">Unique Collaborations</div>
+      {/* Compact Stats Summary */}
+      <div className="mt-3 grid grid-cols-4 gap-3">
+        <div className="bg-blue-50 p-3 rounded-lg">
+          <div className="text-xl font-bold text-blue-600">{filteredArtists.collaborations.length}</div>
+          <div className="text-xs text-blue-700">Collaborations</div>
         </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-green-600">{filteredArtists.composers.length}</div>
-          <div className="text-sm text-green-700">Active Composers</div>
+        <div className="bg-green-50 p-3 rounded-lg">
+          <div className="text-xl font-bold text-green-600">{filteredArtists.singers.length}</div>
+          <div className="text-xs text-green-700">Singers</div>
         </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">{filteredArtists.singers.length}</div>
-          <div className="text-sm text-purple-700">Active Singers</div>
+        <div className="bg-purple-50 p-3 rounded-lg">
+          <div className="text-xl font-bold text-purple-600">{filteredArtists.composers.length}</div>
+          <div className="text-xs text-purple-700">Composers</div>
         </div>
-        <div className="bg-orange-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-orange-600">{filteredArtists.lyricists.length}</div>
-          <div className="text-sm text-orange-700">Active Lyricists</div>
+        <div className="bg-orange-50 p-3 rounded-lg">
+          <div className="text-xl font-bold text-orange-600">{filteredArtists.lyricists.length}</div>
+          <div className="text-xs text-orange-700">Lyricists</div>
         </div>
       </div>
     </div>
