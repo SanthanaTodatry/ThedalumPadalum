@@ -29,7 +29,10 @@ const StunningVisualizations = ({
   chartFilters
 }) => {
 
-  // Add this to StunningVisualizations.js
+  // iOS-safe defaults:
+  const chartHeight = isMobileDevice ? 200 : 250;
+  const animationDuration = isMobileDevice ? 0 : 300; // Disable animations on mobile
+  
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   
   useEffect(() => {
