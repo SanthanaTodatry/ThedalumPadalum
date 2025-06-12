@@ -3,7 +3,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, C
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
 import YouTube from 'react-youtube';
 import StunningVisualizations from './StunningVisualizations';
-/* import MindBlowingVisualizations from './MindBlowingVisualizations'; */
 
 const CleanYouTubePlayer = ({ 
   song, 
@@ -599,20 +598,6 @@ const TamilSongsVisualization = () => {
             chartFilters={chartFilters}
           />
         </div>
-
-        {/* Panel 2: COMMENTED OUT: Mind-Blowing Visualizations */}
-        /*
-        <div className="flex-1 p-4 overflow-y-auto">
-          <MindBlowingVisualizations 
-            filteredSongs={filteredSongs}
-            currentFilters={chartFilters}
-            onYearClick={handleYearClick}
-            onSingerClick={handleSingerClick}
-            onComposerClick={handleComposerClick}
-            onLyricistClick={handleLyricistClick}
-          />
-        </div>
-        */
 
        {/* Panel 3: Clean Player + Playlist Layout */}
        <div className="w-80 bg-white border-l border-blue-200 flex flex-col">
