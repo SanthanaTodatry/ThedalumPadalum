@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, C
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Menu, X, BarChart3, Music, Home } from 'lucide-react';
 import YouTube from 'react-youtube';
 import StunningVisualizations from './StunningVisualizations';
+import { tamilSongsData } from './tamilSongsData';
 
 const CleanYouTubePlayer = ({ 
   song, 
@@ -153,29 +154,9 @@ const CleanYouTubePlayer = ({
 };
 
 const TamilSongsMobile = () => {
-  // Mock data for Tamil movie songs
-  const songsData = [
-    { id: 1, movie: 'Enthiran', year: 2010, song: 'Kadhal Anukkal', composer: 'A.R. Rahman', singer: 'Naresh Iyer', lyricist: 'Vairamuthu' },
-    { id: 2, movie: 'Rockstar', year: 2011, song: 'Sadda Haq', composer: 'A.R. Rahman', singer: 'Mohit Chauhan', lyricist: 'Irshad Kamil' },
-    { id: 3, movie: 'Slumdog Millionaire', year: 2008, song: 'Jai Ho', composer: 'A.R. Rahman', singer: 'A.R. Rahman', lyricist: 'Gulzar' },
-    { id: 4, movie: '127 Hours', year: 2010, song: 'If I Rise', composer: 'A.R. Rahman', singer: 'Dido', lyricist: 'Rollo Armstrong' },
-    { id: 5, movie: 'Rangasthalam', year: 2018, song: 'Yentha Sakkagunnave', composer: 'Devi Sri Prasad', singer: 'Sid Sriram', lyricist: 'Chandrabose' },
-    { id: 6, movie: 'Baahubali', year: 2015, song: 'Dheevara', composer: 'M.M. Keeravani', singer: 'Kailash Kher', lyricist: 'Chaitanya Prasad' },
-    { id: 7, movie: 'Pushpa', year: 2021, song: 'Srivalli', composer: 'Devi Sri Prasad', singer: 'Javed Ali', lyricist: 'Chandrabose' },
-    { id: 8, movie: 'KGF Chapter 1', year: 2018, song: 'Gali Gali', composer: 'Ravi Basrur', singer: 'Mohan Krishna', lyricist: 'Bharathi Pradhan' },
-    { id: 9, movie: 'Arjun Reddy', year: 2017, song: 'Emitemitemo', composer: 'Radhan', singer: 'Sid Sriram', lyricist: 'Shree Mani' },
-    { id: 10, movie: 'Master', year: 2021, song: 'Kutti Story', composer: 'Anirudh Ravichander', singer: 'Anirudh Ravichander', lyricist: 'Arunraja Kamaraj' },
-    { id: 11, movie: 'Bigil', year: 2019, song: 'Marana Mass', composer: 'A.R. Rahman', singer: 'Anirudh Ravichander', lyricist: 'Vivek' },
-    { id: 12, movie: 'RRR', year: 2022, song: 'Naatu Naatu', composer: 'M.M. Keeravani', singer: 'Rahul Sipligunj', lyricist: 'Chandrabose' },
-    { id: 13, movie: 'Kabir Singh', year: 2019, song: 'Bekhayali', composer: 'Sachet-Parampara', singer: 'Sachet Tandon', lyricist: 'Irshad Kamil' },
-    { id: 14, movie: 'Geetha Govindam', year: 2018, song: 'Inkem Inkem Kavale', composer: 'Gopi Sundar', singer: 'Sid Sriram', lyricist: 'Ananta Sriram' },
-    { id: 15, movie: 'Jersey', year: 2019, song: 'Adhento Gaani Vunnapaatuga', composer: 'Anirudh Ravichander', singer: 'Sid Sriram', lyricist: 'Krishna Kanth' },
-    { id: 16, movie: 'Mahanati', year: 2018, song: 'Mooga Manasulu', composer: 'Mickey J Meyer', singer: 'Sid Sriram', lyricist: 'Sirivennela Seetharama Sastry' },
-    { id: 17, movie: 'Soorarai Pottru', year: 2020, song: 'Veyyon Silli', composer: 'G.V. Prakash Kumar', singer: 'Sid Sriram', lyricist: 'Snehan' },
-    { id: 18, movie: 'Beast', year: 2022, song: 'Arabic Kuthu', composer: 'Anirudh Ravichander', singer: 'Anirudh Ravichander', lyricist: 'Sivakarthikeyan' },
-    { id: 19, movie: 'Varisu', year: 2023, song: 'Ranjithame', composer: 'Thaman S', singer: 'Vijay', lyricist: 'Viveka' },
-    { id: 20, movie: 'Leo', year: 2023, song: 'Naa Ready', composer: 'Anirudh Ravichander', singer: 'Thalapathy Vijay', lyricist: 'Super Subu' }
-  ];
+
+  // Mock data
+  const songsData = tamilSongsData;
 
   // State management
   const [searchTerm, setSearchTerm] = useState('');
