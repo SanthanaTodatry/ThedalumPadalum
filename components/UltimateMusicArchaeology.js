@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
-import { Search, ZoomIn, ZoomOut, RotateCcw, Users, Music, Mic, PenTool } from 'lucide-react';
+import { ZoomIn, ZoomOut, Users, Music, Mic, PenTool } from 'lucide-react';
 
 const UltimateMusicArchaeology = ({ 
   filteredSongs, 
@@ -11,7 +11,6 @@ const UltimateMusicArchaeology = ({
   chartFilters
 }) => {
   const [activeTab, setActiveTab] = useState('collaborations');
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedYearRange, setSelectedYearRange] = useState([1960, 2024]);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [highlightedArtist, setHighlightedArtist] = useState(null);
@@ -112,36 +111,23 @@ const UltimateMusicArchaeology = ({
     };
   }, [filteredSongs]);
 
-  // Filter by year range and search
+  // Filter by year range
   const filteredArtists = useMemo(() => {
     const yearFilter = (artist) => {
       const activeYears = Array.from(artist.activeYears || []);
       return activeYears.some(year => year >= selectedYearRange[0] && year <= selectedYearRange[1]);
     };
 
-    const searchFilter = (artist) => {
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
-      if (artist.name) return artist.name.toLowerCase().includes(term);
-      if (artist.composer) {
-        return artist.composer.toLowerCase().includes(term) ||
-               artist.singer.toLowerCase().includes(term) ||
-               artist.lyricist.toLowerCase().includes(term);
-      }
-      return false;
-    };
-
     return {
       collaborations: artistNetworks.collaborations.filter(collab => {
         const years = Array.from(collab.years);
-        return years.some(year => year >= selectedYearRange[0] && year <= selectedYearRange[1]) &&
-               searchFilter(collab);
+        return years.some(year => year >= selectedYearRange[0] && year <= selectedYearRange[1]);
       }),
-      composers: artistNetworks.composers.filter(artist => yearFilter(artist) && searchFilter(artist)),
-      singers: artistNetworks.singers.filter(artist => yearFilter(artist) && searchFilter(artist)),
-      lyricists: artistNetworks.lyricists.filter(artist => yearFilter(artist) && searchFilter(artist))
+      composers: artistNetworks.composers.filter(artist => yearFilter(artist)),
+      singers: artistNetworks.singers.filter(artist => yearFilter(artist)),
+      lyricists: artistNetworks.lyricists.filter(artist => yearFilter(artist))
     };
-  }, [artistNetworks, selectedYearRange, searchTerm]);
+  }, [artistNetworks, selectedYearRange]);
 
   // Draw Global Timeline
   useEffect(() => {
@@ -150,9 +136,9 @@ const UltimateMusicArchaeology = ({
     const container = d3.select(timelineRef.current);
     container.selectAll("*").remove();
 
-    const margin = { top: 10, right: 30, bottom: 30, left: 10 };
+    const margin = { top: 10, right: 10, bottom: 30, left: 10 };
     const width = 800 - margin.left - margin.right;
-    const height = 80 - margin.top - margin.bottom;
+    const height = 120 - margin.top - margin.bottom; // Increased height
 
     const svg = container
       .append("svg")
@@ -395,6 +381,7 @@ const UltimateMusicArchaeology = ({
         })
         .on("click", function() {
           setSelectedYearRange([stream.decade, stream.decade + 9]);
+          onYearClick({ activePayload: [{ payload: { year: stream.decade } }] });
         });
 
       // Add decade label
@@ -566,73 +553,48 @@ const UltimateMusicArchaeology = ({
     d3.selectAll(".main-tooltip").remove();
   };
 
-  const resetView = () => {
-    setZoomLevel(1);
-    setSelectedYearRange([1960, 2024]);
-    setSearchTerm('');
-    setHighlightedArtist(null);
-  };
-
   return (
     <div className="h-full flex flex-col">
-      {/* Compact Timeline - Above Tabs */}
+      {/* Compact Timeline */}
       <div className="bg-white rounded-lg p-3 mb-3 shadow-sm border">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm text-gray-600">
-            🕒 <strong>{selectedYearRange[0]} - {selectedYearRange[1]}</strong>
-            {selectedYearRange[0] !== 1960 || selectedYearRange[1] !== 2024 ? (
-              <span className="ml-2 text-blue-600">
-                ({selectedYearRange[1] - selectedYearRange[0] + 1} years)
-              </span>
-            ) : (
-              <span className="ml-2 text-green-600">(All years)</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search any artist..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48"
-              />
-            </div>
-            {/* Reset */}
-            <button
-              onClick={resetView}
-              className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg"
-              title="Reset View"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="text-sm text-gray-600 mb-2">
+          🕒 <strong>{selectedYearRange[0]} - {selectedYearRange[1]}</strong>
+          {selectedYearRange[0] !== 1960 || selectedYearRange[1] !== 2024 ? (
+            <span className="ml-2 text-blue-600">
+              ({selectedYearRange[1] - selectedYearRange[0] + 1} years)
+            </span>
+          ) : (
+            <span className="ml-2 text-green-600">(All years)</span>
+          )}
         </div>
         <div ref={timelineRef}></div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation with Integrated Stats */}
       <div className="bg-white rounded-lg p-3 mb-3 shadow-sm border">
         <div className="flex bg-gray-100 rounded-lg p-1">
           {[
-            { key: 'collaborations', label: '🤝 Collaborations', icon: Users },
-            { key: 'singers', label: '🎤 Singers', icon: Mic },
-            { key: 'composers', label: '🎼 Composers', icon: Music },
-            { key: 'lyricists', label: '✍️ Lyricists', icon: PenTool }
-          ].map(({ key, label, icon: Icon }) => (
+            { key: 'collaborations', label: '🤝 Collaborations', icon: Users, count: filteredArtists.collaborations.length },
+            { key: 'singers', label: '🎤 Singers', icon: Mic, count: filteredArtists.singers.length },
+            { key: 'composers', label: '🎼 Composers', icon: Music, count: filteredArtists.composers.length },
+            { key: 'lyricists', label: '✍️ Lyricists', icon: PenTool, count: filteredArtists.lyricists.length }
+          ].map(({ key, label, icon: Icon, count }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                 activeTab === key
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-white hover:shadow-sm'
               }`}
             >
-              <Icon className="w-4 h-4" />
-              {label}
+              <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
+              </div>
+              <div className={`text-lg font-bold ${activeTab === key ? 'text-white' : 'text-blue-600'}`}>
+                {count}
+              </div>
             </button>
           ))}
         </div>
@@ -648,7 +610,7 @@ const UltimateMusicArchaeology = ({
             {activeTab === 'lyricists' && `✍️ ${filteredArtists.lyricists.length} Lyricists`}
           </h3>
           
-          {/* Zoom Controls - Inside Chart Panel */}
+          {/* Zoom Controls */}
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
               {activeTab === 'collaborations' 
@@ -680,26 +642,6 @@ const UltimateMusicArchaeology = ({
         
         <div className="h-96 w-full overflow-hidden rounded-lg border">
           <div ref={svgRef}></div>
-        </div>
-      </div>
-
-      {/* Compact Stats Summary */}
-      <div className="mt-3 grid grid-cols-4 gap-3">
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <div className="text-xl font-bold text-blue-600">{filteredArtists.collaborations.length}</div>
-          <div className="text-xs text-blue-700">Collaborations</div>
-        </div>
-        <div className="bg-green-50 p-3 rounded-lg">
-          <div className="text-xl font-bold text-green-600">{filteredArtists.singers.length}</div>
-          <div className="text-xs text-green-700">Singers</div>
-        </div>
-        <div className="bg-purple-50 p-3 rounded-lg">
-          <div className="text-xl font-bold text-purple-600">{filteredArtists.composers.length}</div>
-          <div className="text-xs text-purple-700">Composers</div>
-        </div>
-        <div className="bg-orange-50 p-3 rounded-lg">
-          <div className="text-xl font-bold text-orange-600">{filteredArtists.lyricists.length}</div>
-          <div className="text-xs text-orange-700">Lyricists</div>
         </div>
       </div>
     </div>
