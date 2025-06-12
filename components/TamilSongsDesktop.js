@@ -154,6 +154,8 @@ const CleanYouTubePlayer = ({
 };
 
 const TamilSongsVisualization = () => {
+
+  // Mock data
   const songsData = tamilSongsData;
 
   const [searchTerm, setSearchTerm] = useState('');
