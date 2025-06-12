@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   RadarChart, 
   PolarGrid, 
@@ -28,67 +28,75 @@ const StunningVisualizations = ({
   onLyricistClick,
   chartFilters
 }) => {
-
-  // iOS-safe defaults:
-  const chartHeight = isMobileDevice ? 200 : 250;
-  const animationDuration = isMobileDevice ? 0 : 300; // Disable animations on mobile
-  
+  const [activeView, setActiveView] = useState('radar');
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  
+
   useEffect(() => {
     setIsMobileDevice(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   }, []);
-  
-  // Then limit data on mobile:
+
+  // iOS-safe defaults
+  const chartHeight = isMobileDevice ? 200 : 250;
+  const animationDuration = isMobileDevice ? 0 : 300;
+
+  // Limit data on mobile to prevent crashes
   const processedData = useMemo(() => {
     if (isMobileDevice && filteredSongs.length > 50) {
-      return filteredSongs.slice(0, 50); // Limit to 50 songs on mobile
+      return filteredSongs.slice(0, 50);
     }
     return filteredSongs;
   }, [filteredSongs, isMobileDevice]);
-  
-  const [activeView, setActiveView] = useState('radar');
 
   // Beautiful color palettes
   const DECADE_COLORS = {
-    2000: ['#FF6B6B', '#FF8E8E', '#FFB1B1'],
-    2010: ['#4ECDC4', '#7ED3D1', '#A8DEDA'],
-    2020: ['#45B7D1', '#6AC4DD', '#8FD1E9']
+    1960: ['#FF6B6B', '#FF8E8E', '#FFB1B1'],
+    1970: ['#4ECDC4', '#7ED3D1', '#A8DEDA'],
+    1980: ['#45B7D1', '#6AC4DD', '#8FD1E9'],
+    1990: ['#96CEB4', '#B8DCC6', '#DAEBD7'],
+    2000: ['#FFEAA7', '#FFE58A', '#FFF2CC'],
+    2010: ['#DDA0DD', '#E6B3E6', '#F0C6F0'],
+    2020: ['#FFB74D', '#FFCC80', '#FFE0B2']
   };
 
   const RADAR_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
 
-  // Prepare radar chart data (Artist activity across years)
+  const getDecade = (year) => Math.floor(year / 10) * 10;
+  const getColorForYear = (year) => {
+    const decade = getDecade(year);
+    return DECADE_COLORS[decade] ? DECADE_COLORS[decade][0] : '#96CEB4';
+  };
+
+  // Prepare radar chart data (Artist activity across years) - iOS optimized
   const radarData = useMemo(() => {
-    const years = [...new Set(filteredSongs.map(s => s.year))].sort();
+    const years = [...new Set(processedData.map(s => s.year))].sort().slice(-10); // Last 10 years only on mobile
     const topSingers = Object.entries(
-      filteredSongs.reduce((acc, song) => {
+      processedData.reduce((acc, song) => {
         acc[song.singer] = (acc[song.singer] || 0) + 1;
         return acc;
       }, {})
-    ).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    ).sort((a, b) => b[1] - a[1]).slice(0, isMobileDevice ? 4 : 6); // Fewer singers on mobile
 
     return years.map(year => {
       const yearData = { year };
       topSingers.forEach(([singer]) => {
-        yearData[singer] = filteredSongs.filter(s => s.year === year && s.singer === singer).length;
+        yearData[singer] = processedData.filter(s => s.year === year && s.singer === singer).length;
       });
       return yearData;
     });
-  }, [filteredSongs]);
+  }, [processedData, isMobileDevice]);
 
   const radarKeys = useMemo(() => {
     return Object.entries(
-      filteredSongs.reduce((acc, song) => {
+      processedData.reduce((acc, song) => {
         acc[song.singer] = (acc[song.singer] || 0) + 1;
         return acc;
       }, {})
-    ).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([singer]) => singer);
-  }, [filteredSongs]);
+    ).sort((a, b) => b[1] - a[1]).slice(0, isMobileDevice ? 4 : 6).map(([singer]) => singer);
+  }, [processedData, isMobileDevice]);
 
-  // Prepare treemap data (Hierarchical view)
+  // Prepare treemap data (Hierarchical view) - iOS optimized
   const treemapData = useMemo(() => {
-    const composers = filteredSongs.reduce((acc, song) => {
+    const composers = processedData.reduce((acc, song) => {
       if (!acc[song.composer]) {
         acc[song.composer] = {
           name: song.composer,
@@ -109,27 +117,28 @@ const StunningVisualizations = ({
     return Object.values(composers).map(composer => ({
       ...composer,
       children: Object.values(composer.children)
-    })).slice(0, 8);
-  }, [filteredSongs]);
+    })).slice(0, isMobileDevice ? 6 : 8);
+  }, [processedData, isMobileDevice]);
 
-  // Prepare bubble chart data (Songs as bubbles)
+  // Prepare bubble chart data (Songs as bubbles) - iOS optimized
   const bubbleData = useMemo(() => {
-    return filteredSongs.map((song, index) => ({
+    const dataToUse = isMobileDevice ? processedData.slice(0, 30) : processedData; // Limit bubbles on mobile
+    return dataToUse.map((song, index) => ({
       x: song.year,
-      y: song.singer.length, // Use singer name length as Y
-      z: 50 + (index % 3) * 25, // Bubble size variation
+      y: song.singer.length,
+      z: isMobileDevice ? 30 : 50 + (index % 3) * 25, // Smaller bubbles on mobile
       song: song.song,
       movie: song.movie,
       singer: song.singer,
       composer: song.composer,
-      decade: Math.floor(song.year / 10) * 10
+      decade: getDecade(song.year)
     }));
-  }, [filteredSongs]);
+  }, [processedData, isMobileDevice]);
 
-  // Prepare area chart data (Songs over time by decade)
+  // Prepare area chart data (Songs over time by decade) - iOS optimized
   const areaData = useMemo(() => {
-    const yearCounts = filteredSongs.reduce((acc, song) => {
-      const decade = Math.floor(song.year / 10) * 10;
+    const yearCounts = processedData.reduce((acc, song) => {
+      const decade = getDecade(song.year);
       if (!acc[song.year]) {
         acc[song.year] = { year: song.year };
       }
@@ -139,17 +148,18 @@ const StunningVisualizations = ({
     }, {});
 
     return Object.values(yearCounts).sort((a, b) => a.year - b.year);
-  }, [filteredSongs]);
+  }, [processedData]);
 
   const getDecadeColor = (decade) => DECADE_COLORS[decade]?.[0] || '#96CEB4';
 
+  // iOS-safe tooltip components
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
-          <p className="font-semibold">{`${label}`}</p>
-          {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }}>
+        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg max-w-xs">
+          <p className="font-semibold text-sm">{`${label}`}</p>
+          {payload.slice(0, 3).map((entry, index) => (
+            <p key={index} style={{ color: entry.color }} className="text-xs">
               {`${entry.dataKey}: ${entry.value}`}
             </p>
           ))}
@@ -163,7 +173,7 @@ const StunningVisualizations = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-black bg-opacity-80 text-white p-3 rounded-lg text-sm">
+        <div className="bg-black bg-opacity-80 text-white p-3 rounded-lg text-sm max-w-xs">
           <p className="font-bold">{data.song}</p>
           <p>{data.movie} ({data.x})</p>
           <p>Singer: {data.singer}</p>
@@ -178,7 +188,7 @@ const StunningVisualizations = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-purple-900 text-white p-3 rounded-lg text-sm">
+        <div className="bg-purple-900 text-white p-3 rounded-lg text-sm max-w-xs">
           <p className="font-bold">{data.name}</p>
           <p>Songs: {data.size}</p>
           {data.composer && <p>Composer: {data.composer}</p>}
@@ -190,6 +200,15 @@ const StunningVisualizations = ({
 
   return (
     <div className="h-full flex flex-col">
+      {/* iOS Performance Warning */}
+      {isMobileDevice && filteredSongs.length > 50 && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg">
+          <div className="text-sm text-yellow-800">
+            📱 Showing {processedData.length} of {filteredSongs.length} songs for better mobile performance
+          </div>
+        </div>
+      )}
+
       {/* Navigation Tabs */}
       <div className="flex bg-white rounded-lg p-1 mb-4 shadow-sm border">
         {[
@@ -201,13 +220,13 @@ const StunningVisualizations = ({
           <button
             key={key}
             onClick={() => setActiveView(key)}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
               activeView === key
                 ? `bg-${color}-600 text-white shadow-md`
                 : `text-${color}-600 hover:bg-${color}-50`
             }`}
           >
-            {label}
+            {isMobileDevice ? label.split(' ')[0] : label}
           </button>
         ))}
       </div>
@@ -219,19 +238,19 @@ const StunningVisualizations = ({
           <div className="h-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">🎯 Artist Activity Radar</h3>
-              <div className="text-xs text-gray-500">Top 6 singers across years</div>
+              <div className="text-xs text-gray-500">Top {isMobileDevice ? 4 : 6} singers</div>
             </div>
-            <ResponsiveContainer width="100%" height="90%">
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis 
                   dataKey="year" 
-                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  tick={{ fontSize: isMobileDevice ? 10 : 12, fill: '#6b7280' }}
                 />
                 <PolarRadiusAxis 
                   angle={90} 
                   domain={[0, 'dataMax']}
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tick={{ fontSize: isMobileDevice ? 8 : 10, fill: '#9ca3af' }}
                 />
                 {radarKeys.map((singer, index) => (
                   <Radar
@@ -242,12 +261,13 @@ const StunningVisualizations = ({
                     fill={RADAR_COLORS[index % RADAR_COLORS.length]}
                     fillOpacity={0.2}
                     strokeWidth={2}
-                    dot={{ r: 4, strokeWidth: 2 }}
+                    dot={{ r: isMobileDevice ? 2 : 4, strokeWidth: 2 }}
+                    animationDuration={animationDuration}
                   />
                 ))}
                 <Tooltip content={<CustomTooltip />} />
                 <Legend 
-                  wrapperStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ fontSize: isMobileDevice ? '10px' : '12px' }}
                   onClick={(e) => onSingerClick({ name: e.value })}
                   iconType="circle"
                 />
@@ -261,9 +281,11 @@ const StunningVisualizations = ({
           <div className="h-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">🫧 Song Universe</h3>
-              <div className="text-xs text-gray-500">Hover bubbles • X: Year • Y: Singer name length</div>
+              <div className="text-xs text-gray-500">
+                {isMobileDevice ? 'Tap bubbles' : 'Hover bubbles • X: Year • Y: Singer name length'}
+              </div>
             </div>
-            <ResponsiveContainer width="100%" height="90%">
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <ScatterChart data={bubbleData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
@@ -271,15 +293,15 @@ const StunningVisualizations = ({
                   dataKey="x" 
                   name="Year"
                   domain={['dataMin', 'dataMax']}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: isMobileDevice ? 10 : 12 }}
                 />
                 <YAxis 
                   type="number" 
                   dataKey="y" 
                   name="Singer"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: isMobileDevice ? 10 : 12 }}
                 />
-                <ZAxis type="number" dataKey="z" range={[20, 100]} />
+                <ZAxis type="number" dataKey="z" range={isMobileDevice ? [15, 50] : [20, 100]} />
                 <Tooltip content={<BubbleTooltip />} />
                 {Object.keys(DECADE_COLORS).map(decade => (
                   <Scatter
@@ -290,9 +312,10 @@ const StunningVisualizations = ({
                     fillOpacity={0.7}
                     onClick={(data) => onYearClick({ activePayload: [{ payload: { year: data.x } }] })}
                     style={{ cursor: 'pointer' }}
+                    animationDuration={animationDuration}
                   />
                 ))}
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: isMobileDevice ? '10px' : '12px' }} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -303,19 +326,23 @@ const StunningVisualizations = ({
           <div className="h-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">🗂️ Music Hierarchy</h3>
-              <div className="text-xs text-gray-500">Composers → Singers • Click to filter</div>
+              <div className="text-xs text-gray-500">
+                {isMobileDevice ? 'Tap to filter' : 'Composers → Singers • Click to filter'}
+              </div>
             </div>
-            <ResponsiveContainer width="100%" height="90%">
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <Treemap
                 data={treemapData}
                 dataKey="size"
                 stroke="#fff"
-                strokeWidth={2}
+                strokeWidth={1}
+                animationDuration={animationDuration}
                 content={({ x, y, width, height, payload, index }) => {
                   if (!payload) return null;
                   
                   const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FF8E8E', '#7ED3D1'];
                   const color = colors[index % colors.length];
+                  const fontSize = Math.min(width / (isMobileDevice ? 12 : 8), height / (isMobileDevice ? 6 : 4), isMobileDevice ? 10 : 14);
                   
                   return (
                     <g>
@@ -327,7 +354,7 @@ const StunningVisualizations = ({
                         fill={color}
                         fillOpacity={0.8}
                         stroke="#fff"
-                        strokeWidth={2}
+                        strokeWidth={1}
                         style={{ cursor: 'pointer' }}
                         onClick={() => {
                           if (payload.composer) {
@@ -337,26 +364,28 @@ const StunningVisualizations = ({
                           }
                         }}
                       />
-                      {width > 50 && height > 30 && (
+                      {width > (isMobileDevice ? 30 : 50) && height > (isMobileDevice ? 20 : 30) && (
                         <text
                           x={x + width / 2}
                           y={y + height / 2}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fontSize={Math.min(width / 8, height / 4, 14)}
+                          fontSize={fontSize}
                           fill="#fff"
                           fontWeight="bold"
                         >
-                          {payload.name}
+                          {payload.name.length > (isMobileDevice ? 8 : 12) 
+                            ? payload.name.substring(0, isMobileDevice ? 8 : 12) + "..." 
+                            : payload.name}
                         </text>
                       )}
-                      {width > 80 && height > 50 && (
+                      {width > (isMobileDevice ? 50 : 80) && height > (isMobileDevice ? 35 : 50) && (
                         <text
                           x={x + width / 2}
-                          y={y + height / 2 + 15}
+                          y={y + height / 2 + (isMobileDevice ? 10 : 15)}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fontSize={Math.min(width / 12, height / 6, 10)}
+                          fontSize={Math.min(fontSize - 2, isMobileDevice ? 8 : 10)}
                           fill="#fff"
                         >
                           {payload.size} songs
@@ -377,18 +406,18 @@ const StunningVisualizations = ({
           <div className="h-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">🌊 Music Time Waves</h3>
-              <div className="text-xs text-gray-500">Song releases flowing through decades</div>
+              <div className="text-xs text-gray-500">Song releases through decades</div>
             </div>
-            <ResponsiveContainer width="100%" height="90%">
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <AreaChart data={areaData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="year" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: isMobileDevice ? 10 : 12 }}
                   onClick={(data) => onYearClick({ activePayload: [{ payload: { year: data.value } }] })}
                   style={{ cursor: 'pointer' }}
                 />
-                <YAxis tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: isMobileDevice ? 10 : 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 {Object.keys(DECADE_COLORS).map((decade, index) => (
                   <Area
@@ -400,9 +429,10 @@ const StunningVisualizations = ({
                     fill={getDecadeColor(parseInt(decade))}
                     fillOpacity={0.7}
                     name={`${decade}s`}
+                    animationDuration={animationDuration}
                   />
                 ))}
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: isMobileDevice ? '10px' : '12px' }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
