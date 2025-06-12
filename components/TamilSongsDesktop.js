@@ -2,8 +2,8 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
 import YouTube from 'react-youtube';
-import StunningVisualizations from './StunningVisualizations';
 import { tamilSongsData } from './tamilSongsData';
+import UltimateMusicArchaeology from './UltimateMusicArchaeology';
 
 const CleanYouTubePlayer = ({ 
   song, 
@@ -570,7 +570,7 @@ const TamilSongsVisualization = () => {
 
         {/* Panel 2: Stunning Visualizations */}
         <div className="flex-1 p-4 overflow-y-auto">
-          <StunningVisualizations 
+          <UltimateMusicArchaeology
             filteredSongs={filteredSongs}
             onYearClick={handleYearClick}
             onSingerClick={handleSingerClick}
