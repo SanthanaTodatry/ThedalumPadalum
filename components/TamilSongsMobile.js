@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Menu, X, BarChart3, Music, Home } from 'lucide-react';
 import YouTube from 'react-youtube';
-/* import MindBlowingVisualizations from './MindBlowingVisualizations'; */
 import StunningVisualizations from './StunningVisualizations';
 
 const CleanYouTubePlayer = ({ 
@@ -477,19 +476,6 @@ const TamilSongsMobile = () => {
         />
       </div>
     );
-
-    /*
-    const ChartsView = () => (
-    <MindBlowingVisualizations 
-      filteredSongs={filteredSongs}
-      currentFilters={chartFilters}
-      onYearClick={handleYearClick}
-      onSingerClick={handleSingerClick}
-      onComposerClick={handleComposerClick}
-      onLyricistClick={handleLyricistClick}
-    />
-  );
-  */
 
   const PlaylistView = () => {
     // Sort playlist by song name
