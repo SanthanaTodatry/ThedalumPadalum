@@ -28,6 +28,22 @@ const StunningVisualizations = ({
   onLyricistClick,
   chartFilters
 }) => {
+
+  // Add this to StunningVisualizations.js
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  
+  useEffect(() => {
+    setIsMobileDevice(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+  
+  // Then limit data on mobile:
+  const processedData = useMemo(() => {
+    if (isMobileDevice && filteredSongs.length > 50) {
+      return filteredSongs.slice(0, 50); // Limit to 50 songs on mobile
+    }
+    return filteredSongs;
+  }, [filteredSongs, isMobileDevice]);
+  
   const [activeView, setActiveView] = useState('radar');
 
   // Beautiful color palettes
