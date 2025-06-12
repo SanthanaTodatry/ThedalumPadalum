@@ -2,7 +2,8 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
 import YouTube from 'react-youtube';
-import MindBlowingVisualizations from './MindBlowingVisualizations';
+import StunningVisualizations from './StunningVisualizations';
+/* import MindBlowingVisualizations from './MindBlowingVisualizations'; */
 
 const CleanYouTubePlayer = ({ 
   song, 
@@ -587,7 +588,20 @@ const TamilSongsVisualization = () => {
           </div>
         </div>
 
-        {/* Panel 2: Mind-Blowing Visualizations */}
+        {/* Panel 2: Stunning Visualizations */}
+        <div className="flex-1 p-4 overflow-y-auto">
+          <StunningVisualizations 
+            filteredSongs={filteredSongs}
+            onYearClick={handleYearClick}
+            onSingerClick={handleSingerClick}
+            onComposerClick={handleComposerClick}
+            onLyricistClick={handleLyricistClick}
+            chartFilters={chartFilters}
+          />
+        </div>
+
+        {/* Panel 2: COMMENTED OUT: Mind-Blowing Visualizations */}
+        /*
         <div className="flex-1 p-4 overflow-y-auto">
           <MindBlowingVisualizations 
             filteredSongs={filteredSongs}
@@ -598,6 +612,7 @@ const TamilSongsVisualization = () => {
             onLyricistClick={handleLyricistClick}
           />
         </div>
+        */
 
        {/* Panel 3: Clean Player + Playlist Layout */}
        <div className="w-80 bg-white border-l border-blue-200 flex flex-col">
