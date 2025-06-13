@@ -4,6 +4,7 @@ import { Search, RotateCcw, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat 
 import YouTube from 'react-youtube';
 import { tamilSongsData } from './tamilSongsData';
 import UltimateMusicArchaeology from './UltimateMusicArchaeology';
+import SunburstVisualizer from './SunburstVisualizer';
 
 const CleanYouTubePlayer = ({ 
   song, 
