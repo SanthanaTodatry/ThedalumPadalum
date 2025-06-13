@@ -175,6 +175,9 @@ const TamilSongsVisualization = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
+  
+  // Reset trigger for charts
+  const [chartResetTrigger, setChartResetTrigger] = useState(0);
 
   // Filter functions
   const toggleFilter = (item, selectedItems, setSelectedItems) => {
@@ -199,8 +202,8 @@ const TamilSongsVisualization = () => {
       composer: null,
       lyricist: null
     });
-    // Reset chart-specific states if needed
-    // Add any other chart states that need resetting here
+    // Trigger chart reset
+    setChartResetTrigger(prev => prev + 1);
   };
 
   // Get unique values
@@ -598,6 +601,7 @@ const TamilSongsVisualization = () => {
             onComposerClick={handleComposerClick}
             onLyricistClick={handleLyricistClick}
             chartFilters={chartFilters}
+            resetTrigger={chartResetTrigger}
           />
         </div>
 
