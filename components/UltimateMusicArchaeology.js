@@ -111,7 +111,7 @@ const UltimateMusicArchaeology = ({
     };
   }, [filteredSongs]);
 
-  // Filter by year range
+  // Filter by year range and search (search now handled by parent component)
   const filteredArtists = useMemo(() => {
     const yearFilter = (artist) => {
       const activeYears = Array.from(artist.activeYears || []);
