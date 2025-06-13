@@ -310,152 +310,226 @@ const UltimateMusicArchaeology = ({
   }, [filteredArtists, activeTab, zoomLevel, highlightedArtist]);
 
   const drawCollaborationNetwork = (svg, collaborations, width, height) => {
-    // Stream/Sankey-style visualization for collaborations
+    // Create sunburst visualization for collaborations
     const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
+    const radius = Math.min(width, height) / 2 - Math.max(...Object.values(margin));
 
     const g = svg.append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+      .attr("transform", `translate(${width / 2},${height / 2})`);
 
-    // Group collaborations by decade for streams
-    const decades = d3.group(collaborations, d => Math.floor(Math.min(...d.years) / 10) * 10);
-    
-    // Create streams for each decade
-    const streams = Array.from(decades, ([decade, collabs]) => ({
-      decade,
-      collaborations: collabs,
-      composers: [...new Set(collabs.map(c => c.composer))],
-      singers: [...new Set(collabs.map(c => c.singer))],
-      lyricists: [...new Set(collabs.map(c => c.lyricist))],
-      totalSongs: collabs.reduce((sum, c) => sum + c.songs.length, 0)
-    })).sort((a, b) => a.decade - b.decade);
+    // Prepare hierarchical data for sunburst
+    const hierarchyData = prepareHierarchicalData(collaborations);
 
-    const xScale = d3.scaleBand()
-      .domain(streams.map(d => d.decade))
-      .range([0, innerWidth])
-      .padding(0.1);
+    // Create hierarchy
+    const root = d3.hierarchy(hierarchyData)
+      .sum(d => d.value || 1)
+      .sort((a, b) => b.value - a.value);
 
-    const maxSongs = d3.max(streams, d => d.totalSongs);
-    const yScale = d3.scaleLinear()
-      .domain([0, maxSongs])
-      .range([innerHeight, 0]);
+    // Create partition layout
+    const partition = d3.partition()
+      .size([2 * Math.PI, radius]);
 
-    const colorScale = d3.scaleOrdinal()
-      .domain([1960, 1970, 1980, 1990, 2000, 2010, 2020])
+    partition(root);
+
+    // Color scales for different levels
+    const decadeColors = d3.scaleOrdinal()
+      .domain(['1960', '1970', '1980', '1990', '2000', '2010', '2020'])
       .range(['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FFB74D']);
 
-    // Draw decade streams
-    streams.forEach((stream, i) => {
-      const x = xScale(stream.decade);
-      const barWidth = xScale.bandwidth();
-      
-      // Main stream bar
-      g.append("rect")
-        .attr("x", x)
-        .attr("y", yScale(stream.totalSongs))
-        .attr("width", barWidth)
-        .attr("height", innerHeight - yScale(stream.totalSongs))
-        .attr("fill", colorScale(stream.decade))
-        .attr("opacity", 0.7)
-        .attr("rx", 4)
-        .style("cursor", "pointer")
-        .on("mouseover", function(event) {
-          d3.select(this).attr("opacity", 1);
-          
-          const tooltip = d3.select("body").append("div")
-            .attr("class", "stream-tooltip")
-            .style("position", "absolute")
-            .style("background", "rgba(0,0,0,0.9)")
-            .style("color", "white")
-            .style("padding", "12px")
-            .style("border-radius", "8px")
-            .style("font-size", "13px")
-            .style("pointer-events", "none")
-            .style("z-index", 1000)
-            .style("max-width", "250px");
+    const composerColors = d3.scaleOrdinal(d3.schemeCategory10);
+    const singerColors = d3.scaleOrdinal(d3.schemePastel1);
 
-          tooltip.html(`
-            <strong>${stream.decade}s Era</strong><br/>
-            Total Songs: ${stream.totalSongs}<br/>
-            Collaborations: ${stream.collaborations.length}<br/>
-            Composers: ${stream.composers.length}<br/>
-            Singers: ${stream.singers.length}<br/>
-            Lyricists: ${stream.lyricists.length}
-          `)
-          .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 10) + "px");
-        })
-        .on("mouseout", function() {
-          d3.select(this).attr("opacity", 0.7);
-          d3.selectAll(".stream-tooltip").remove();
-        })
-        .on("click", function() {
-          setSelectedYearRange([stream.decade, stream.decade + 9]);
-          onYearClick({ activePayload: [{ payload: { year: stream.decade } }] });
-        });
+    // Arc generator
+    const arc = d3.arc()
+      .startAngle(d => d.x0)
+      .endAngle(d => d.x1)
+      .innerRadius(d => d.y0)
+      .outerRadius(d => d.y1);
 
-      // Add decade label
-      g.append("text")
-        .attr("x", x + barWidth / 2)
-        .attr("y", innerHeight + 15)
-        .attr("text-anchor", "middle")
-        .style("font-size", "12px")
-        .style("font-weight", "bold")
-        .style("fill", "#666")
-        .text(`${stream.decade}s`);
-
-      // Add song count label on bar
-      if (stream.totalSongs > 5) {
-        g.append("text")
-          .attr("x", x + barWidth / 2)
-          .attr("y", yScale(stream.totalSongs) - 5)
-          .attr("text-anchor", "middle")
-          .style("font-size", "12px")
-          .style("font-weight", "bold")
-          .style("fill", "#333")
-          .text(stream.totalSongs);
-      }
-
-      // Draw collaboration flow lines to next decade
-      if (i < streams.length - 1) {
-        const nextStream = streams[i + 1];
-        const sharedArtists = stream.composers.filter(c => nextStream.composers.includes(c)).length +
-                             stream.singers.filter(s => nextStream.singers.includes(s)).length +
-                             stream.lyricists.filter(l => nextStream.lyricists.includes(l)).length;
-        
-        if (sharedArtists > 0) {
-          const flowHeight = Math.max(2, sharedArtists * 2);
-          const startX = x + barWidth;
-          const endX = xScale(nextStream.decade);
-          const midX = (startX + endX) / 2;
-          const startY = yScale(stream.totalSongs / 2);
-          const endY = yScale(nextStream.totalSongs / 2);
-
-          // Curved flow line
-          const path = d3.path();
-          path.moveTo(startX, startY);
-          path.bezierCurveTo(midX, startY, midX, endY, endX, endY);
-
-          g.append("path")
-            .attr("d", path.toString())
-            .attr("stroke", "#999")
-            .attr("stroke-width", flowHeight)
-            .attr("stroke-opacity", 0.3)
-            .attr("fill", "none");
+    // Draw sunburst segments
+    const segments = g.selectAll("path")
+      .data(root.descendants().filter(d => d.depth > 0))
+      .enter()
+      .append("path")
+      .attr("d", arc)
+      .style("fill", d => {
+        if (d.depth === 1) {
+          // Decade level
+          return decadeColors(d.data.name);
+        } else if (d.depth === 2) {
+          // Composer level
+          return composerColors(d.data.name);
+        } else if (d.depth === 3) {
+          // Singer level
+          return singerColors(d.data.name);
+        } else {
+          // Lyricist level
+          return d3.interpolateViridis(Math.random());
         }
-      }
-    });
+      })
+      .style("stroke", "#fff")
+      .style("stroke-width", 1)
+      .style("opacity", 0.8)
+      .style("cursor", "pointer")
+      .on("mouseover", function(event, d) {
+        d3.select(this)
+          .style("opacity", 1)
+          .style("stroke-width", 2);
+        
+        showSunburstTooltip(event, d);
+      })
+      .on("mouseout", function(event, d) {
+        d3.select(this)
+          .style("opacity", 0.8)
+          .style("stroke-width", 1);
+        
+        hideSunburstTooltip();
+      })
+      .on("click", function(event, d) {
+        if (d.depth === 1) {
+          // Decade clicked
+          const decade = parseInt(d.data.name);
+          setSelectedYearRange([decade, decade + 9]);
+          onYearClick({ activePayload: [{ payload: { year: decade } }] });
+        } else if (d.depth === 2) {
+          // Composer clicked
+          onComposerClick({ name: d.data.name });
+        } else if (d.depth === 3) {
+          // Singer clicked
+          onSingerClick({ name: d.data.name });
+        } else if (d.depth === 4) {
+          // Lyricist clicked
+          onLyricistClick({ name: d.data.name });
+        }
+      });
 
-    // Add title
-    g.append("text")
-      .attr("x", innerWidth / 2)
-      .attr("y", -5)
+    // Add labels for larger segments
+    g.selectAll("text")
+      .data(root.descendants().filter(d => d.depth > 0 && (d.x1 - d.x0) > 0.1))
+      .enter()
+      .append("text")
+      .attr("transform", d => {
+        const angle = (d.x0 + d.x1) / 2;
+        const radius = (d.y0 + d.y1) / 2;
+        return `translate(${Math.cos(angle - Math.PI / 2) * radius},${Math.sin(angle - Math.PI / 2) * radius}) rotate(${angle * 180 / Math.PI - 90})`;
+      })
       .attr("text-anchor", "middle")
-      .style("font-size", "14px")
+      .attr("dominant-baseline", "middle")
+      .style("font-size", d => Math.min(12, (d.y1 - d.y0) * 0.5) + "px")
+      .style("font-weight", "bold")
+      .style("fill", "#333")
+      .style("pointer-events", "none")
+      .text(d => {
+        const name = d.data.name;
+        const maxLength = Math.floor((d.x1 - d.x0) * 10);
+        return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
+      });
+
+    // Center title
+    g.append("text")
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .style("font-size", "16px")
       .style("font-weight", "bold")
       .style("fill", "#666")
-      .text("Collaboration Streams Through Decades");
+      .text("Collaboration");
+    
+    g.append("text")
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .attr("dy", "1.2em")
+      .style("font-size", "14px")
+      .style("fill", "#666")
+      .text("Network");
+  };
+
+  const prepareHierarchicalData = (collaborations) => {
+    // Group by decade -> composer -> singer -> lyricist
+    const hierarchy = { name: "root", children: [] };
+    const decades = new Map();
+
+    collaborations.forEach(collab => {
+      collab.songs.forEach(song => {
+        const decade = Math.floor(song.year / 10) * 10;
+        const decadeKey = decade.toString();
+        
+        if (!decades.has(decadeKey)) {
+          decades.set(decadeKey, { name: decadeKey, children: [], composers: new Map() });
+        }
+        
+        const decadeData = decades.get(decadeKey);
+        const composerKey = song.composer;
+        
+        if (!decadeData.composers.has(composerKey)) {
+          decadeData.composers.set(composerKey, { name: composerKey, children: [], singers: new Map() });
+        }
+        
+        const composerData = decadeData.composers.get(composerKey);
+        const singerKey = song.singer;
+        
+        if (!composerData.singers.has(singerKey)) {
+          composerData.singers.set(singerKey, { name: singerKey, children: [], lyricists: new Map() });
+        }
+        
+        const singerData = composerData.singers.get(singerKey);
+        const lyricistKey = song.lyricist;
+        
+        if (!singerData.lyricists.has(lyricistKey)) {
+          singerData.lyricists.set(lyricistKey, { name: lyricistKey, value: 0, songs: [] });
+        }
+        
+        const lyricistData = singerData.lyricists.get(lyricistKey);
+        lyricistData.value += 1;
+        lyricistData.songs.push(song);
+      });
+    });
+
+    // Convert maps to arrays
+    decades.forEach(decadeData => {
+      decadeData.children = Array.from(decadeData.composers.values());
+      decadeData.children.forEach(composerData => {
+        composerData.children = Array.from(composerData.singers.values());
+        composerData.children.forEach(singerData => {
+          singerData.children = Array.from(singerData.lyricists.values());
+        });
+      });
+    });
+
+    hierarchy.children = Array.from(decades.values());
+    return hierarchy;
+  };
+
+  const showSunburstTooltip = (event, d) => {
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "sunburst-tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(0,0,0,0.9)")
+      .style("color", "white")
+      .style("padding", "12px")
+      .style("border-radius", "8px")
+      .style("font-size", "13px")
+      .style("pointer-events", "none")
+      .style("z-index", 1000)
+      .style("max-width", "300px");
+
+    let content = "";
+    if (d.depth === 1) {
+      content = `<strong>${d.data.name}s Era</strong><br/>Songs: ${d.value}`;
+    } else if (d.depth === 2) {
+      content = `<strong>Composer: ${d.data.name}</strong><br/>Songs: ${d.value}<br/>Decade: ${d.parent.data.name}s`;
+    } else if (d.depth === 3) {
+      content = `<strong>Singer: ${d.data.name}</strong><br/>Songs: ${d.value}<br/>Composer: ${d.parent.data.name}<br/>Decade: ${d.parent.parent.data.name}s`;
+    } else if (d.depth === 4) {
+      content = `<strong>Lyricist: ${d.data.name}</strong><br/>Songs: ${d.value}<br/>Singer: ${d.parent.data.name}<br/>Composer: ${d.parent.parent.data.name}<br/>Decade: ${d.parent.parent.parent.data.name}s`;
+    }
+
+    tooltip.html(content)
+      .style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY - 10) + "px");
+  };
+
+  const hideSunburstTooltip = () => {
+    d3.selectAll(".sunburst-tooltip").remove();
   };
 
   const drawArtistVisualization = (svg, artists, type, width, height) => {
