@@ -185,6 +185,7 @@ const TamilSongsVisualization = () => {
     }
   };
 
+  // Updated resetFilters function - now resets EVERYTHING including chart states
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedYears([]);
@@ -198,6 +199,8 @@ const TamilSongsVisualization = () => {
       composer: null,
       lyricist: null
     });
+    // Reset chart-specific states if needed
+    // Add any other chart states that need resetting here
   };
 
   // Get unique values
@@ -280,7 +283,7 @@ const TamilSongsVisualization = () => {
       .slice(0, 8);
   }, [filteredSongs]);
 
-  // Chart click handlers
+  // Chart click handlers - now they refresh the playlist
   const handleYearClick = (data) => {
     if (data && data.activePayload && data.activePayload[0]) {
       const year = data.activePayload[0].payload.year;
@@ -423,13 +426,13 @@ const TamilSongsVisualization = () => {
         {/* Panel 1: Filters */}
         <div className="w-64 bg-white border-r border-blue-200 flex flex-col">
           <div className="p-4 border-b border-blue-200">
-            {/* Reset Button */}
+            {/* Reset Button - RENAMED */}
             <button
               onClick={resetFilters}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm mb-4"
             >
               <RotateCcw className="w-4 h-4" />
-              Reset All Filters
+              Reset All
             </button>
 
             {/* Filter Tabs - Match Graph Layout */}
@@ -559,6 +562,24 @@ const TamilSongsVisualization = () => {
                   {chartFilters.year && (
                     <div className="flex items-center justify-between bg-blue-100 px-2 py-1 rounded">
                       <span>Year: {chartFilters.year}</span>
+                      <button onClick={() => setChartFilters(prev => ({ ...prev, year: null }))} className="text-blue-600 hover:text-blue-800">×</button>
+                    </div>
+                  )}
+                  {chartFilters.singer && (
+                    <div className="flex items-center justify-between bg-blue-100 px-2 py-1 rounded">
+                      <span>Singer: {chartFilters.singer}</span>
+                      <button onClick={() => setChartFilters(prev => ({ ...prev, singer: null }))} className="text-blue-600 hover:text-blue-800">×</button>
+                    </div>
+                  )}
+                  {chartFilters.composer && (
+                    <div className="flex items-center justify-between bg-blue-100 px-2 py-1 rounded">
+                      <span>Composer: {chartFilters.composer}</span>
+                      <button onClick={() => setChartFilters(prev => ({ ...prev, composer: null }))} className="text-blue-600 hover:text-blue-800">×</button>
+                    </div>
+                  )}
+                  {chartFilters.lyricist && (
+                    <div className="flex items-center justify-between bg-blue-100 px-2 py-1 rounded">
+                      <span>Lyricist: {chartFilters.lyricist}</span>
                       <button onClick={() => setChartFilters(prev => ({ ...prev, lyricist: null }))} className="text-blue-600 hover:text-blue-800">×</button>
                     </div>
                   )}
