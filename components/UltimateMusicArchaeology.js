@@ -8,7 +8,8 @@ const UltimateMusicArchaeology = ({
   onSingerClick,
   onComposerClick,
   onLyricistClick,
-  chartFilters
+  chartFilters,
+  resetTrigger = 0
 }) => {
   const [activeTab, setActiveTab] = useState('collaborations');
   const [selectedYearRange, setSelectedYearRange] = useState([1960, 2024]);
@@ -17,6 +18,16 @@ const UltimateMusicArchaeology = ({
   
   const svgRef = useRef();
   const timelineRef = useRef();
+
+  // Reset chart states when resetTrigger changes
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      setSelectedYearRange([1960, 2024]);
+      setZoomLevel(1);
+      setHighlightedArtist(null);
+      setActiveTab('collaborations');
+    }
+  }, [resetTrigger]);
 
   // Global timeline data
   const timelineData = useMemo(() => {
@@ -555,48 +566,51 @@ const UltimateMusicArchaeology = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact Timeline */}
+      {/* Timeline with Vertical Tab Navigation */}
       <div className="bg-white rounded-lg p-3 mb-3 shadow-sm border">
-        <div className="text-sm text-gray-600 mb-2">
-          🕒 <strong>{selectedYearRange[0]} - {selectedYearRange[1]}</strong>
-          {selectedYearRange[0] !== 1960 || selectedYearRange[1] !== 2024 ? (
-            <span className="ml-2 text-blue-600">
-              ({selectedYearRange[1] - selectedYearRange[0] + 1} years)
-            </span>
-          ) : (
-            <span className="ml-2 text-green-600">(All years)</span>
-          )}
-        </div>
-        <div ref={timelineRef}></div>
-      </div>
-
-      {/* Tab Navigation with Integrated Stats */}
-      <div className="bg-white rounded-lg p-3 mb-3 shadow-sm border">
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          {[
-            { key: 'collaborations', label: '🤝 Collaborations', icon: Users, count: filteredArtists.collaborations.length },
-            { key: 'singers', label: '🎤 Singers', icon: Mic, count: filteredArtists.singers.length },
-            { key: 'composers', label: '🎼 Composers', icon: Music, count: filteredArtists.composers.length },
-            { key: 'lyricists', label: '✍️ Lyricists', icon: PenTool, count: filteredArtists.lyricists.length }
-          ].map(({ key, label, icon: Icon, count }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 px-4 rounded-md text-sm font-medium transition-all ${
-                activeTab === key
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-white hover:shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Icon className="w-4 h-4" />
-                <span>{label}</span>
-              </div>
-              <div className={`text-lg font-bold ${activeTab === key ? 'text-white' : 'text-blue-600'}`}>
-                {count}
-              </div>
-            </button>
-          ))}
+        <div className="flex gap-4">
+          {/* Timeline Section */}
+          <div className="flex-1">
+            <div className="text-sm text-gray-600 mb-2">
+              🕒 <strong>{selectedYearRange[0]} - {selectedYearRange[1]}</strong>
+              {selectedYearRange[0] !== 1960 || selectedYearRange[1] !== 2024 ? (
+                <span className="ml-2 text-blue-600">
+                  ({selectedYearRange[1] - selectedYearRange[0] + 1} years)
+                </span>
+              ) : (
+                <span className="ml-2 text-green-600">(All years)</span>
+              )}
+            </div>
+            <div ref={timelineRef}></div>
+          </div>
+          
+          {/* Vertical Tab Navigation */}
+          <div className="w-48 flex flex-col gap-2">
+            {[
+              { key: 'collaborations', label: '🤝 Collaborations', icon: Users, count: filteredArtists.collaborations.length },
+              { key: 'singers', label: '🎤 Singers', icon: Mic, count: filteredArtists.singers.length },
+              { key: 'composers', label: '🎼 Composers', icon: Music, count: filteredArtists.composers.length },
+              { key: 'lyricists', label: '✍️ Lyricists', icon: PenTool, count: filteredArtists.lyricists.length }
+            ].map(({ key, label, icon: Icon, count }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center justify-between p-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === key
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4" />
+                  <span>{label}</span>
+                </div>
+                <div className={`text-lg font-bold ${activeTab === key ? 'text-white' : 'text-blue-600'}`}>
+                  {count}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
